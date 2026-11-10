@@ -11,4 +11,6 @@ Aucune campagne video sur cette branche. Les runs verts de `dev10` /
 `dev10-v1` ne sont **pas** canoniques ici : moteur mele ranking, zoom
 present, Heisenberg advisory.
 
-Prochaine ligne : premier E2E Actions (pack PERTURABO joignable).
+| 2026-11-10 | `sanguinala-v1` | premier E2E multi-videos VOD twitch.tv/videos/2923715533 | OK | 2 assets 8s, LOOK blur 9:16, glow scene, fade black. OUT/p6/A01.mp4 + A02.mp4. LUT off. 0 jump cut 0 zoom. |
+
+Prochaine ligne : Phase 7 publication operateur (hors code).

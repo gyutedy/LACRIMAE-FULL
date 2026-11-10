@@ -10,7 +10,13 @@ python3 run_all.py --pack TRACKING/fixtures/sanguinala_p5_pack.json --work WORK 
 
 Portes : G0 PACK, G0-S (blur|reframing), G1 sample/VOD, G2 duree, G3 LOOK 9:16, M1 montage, G4 caption, GL1 glow, L1/F1 lut+fade, G-PACK, G6 F05/F06.
 
-Fixture Phase 5 = 2 assets locaux 9:16, **sans VOD payante**. Vraie VOD = Phase 6.
+Fixture Phase 5 = 2 assets locaux 9:16, **sans VOD payante**.
+
+Phase 6 (vraie VOD) :
+
+```bash
+python3 run_all.py --pack TRACKING/fixtures/sanguinala_p6_pack.json --work WORK/p6 --out OUT/p6
+```
 
 ```bash
 python3 run_all.py --pack TRACKING/fixtures/sanguinala_p5_split_scene.json --dry-run

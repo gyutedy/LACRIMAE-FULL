@@ -26,3 +26,10 @@
 | 2026-11-10 | 5 | run_all.py portes G0-G6 + fixture 2 assets | G0 G0-S G1 G2 G3 M1 G4 GL1 L1/F1 G-PACK G6 | OK. split_scene dry-run exit 2. blur 2 clips → OUT/A01.mp4 + OUT/A02.mp4. Heisenberg jamais appele. VOD = sample local 9:16 (pas de VOD payante). |
 | 2026-11-10 | 5 | montage.py passthrough si broll vide | M1 | OK. copy input → out. broll absent reste exit 2. |
 | 2026-11-10 | 5 | lut_apply.py fade black + video-only | L1 F1 | OK. -an si pas d'audio. cube absent reste exit 2. |
+| 2026-11-10 | 6 | VOD twitch.tv/videos/2923715533 probe | G1 | OK. 8805s 1920x1080. Segments 120-128 et 480-488. |
+| 2026-11-10 | 6 | yt-dlp --download-sections 8s A01+A02 | G1 G2 | OK. duree 8.00s. Jamais la VOD complete. |
+| 2026-11-10 | 6 | LOOK blur 1080x1920 0 zoom | G3 | OK. ffmpeg scale/crop/gblur overlay, pas Remotion. |
+| 2026-11-10 | 6 | preview glow 1 frame A01 | GL2 | OK. A01_glow_preview.png. |
+| 2026-11-10 | 6 | run_all P6 A01 | G6 | OK. OUT/p6/A01.mp4 1080x1920 h264 yuv420p. |
+| 2026-11-10 | 6 | glow A02 timeout 300s mid-file | GL | FAIL partiel (1.9s). Relance glow_clip OK 8s. Consigné, pas de rewrite pipeline. |
+| 2026-11-10 | 6 | premier E2E multi-videos | G-PACK G6 | OK. OUT/p6/A01.mp4 + A02.mp4. LUT off (pas de .cube). Caption housing only. Heisenberg jamais appele. 0 jump cut 0 zoom. |

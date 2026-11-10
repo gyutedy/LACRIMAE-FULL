@@ -391,6 +391,13 @@ Commit : `sanguinala-v1 P6: first multi-asset E2E N MP4 in OUT/`
 
 Si une porte bloque plus d'un jour : publier avec le maillon degrade (sans LUT, sans glow) plutot que bloquer. Loguer le degrade.
 
+### Phase 6 — FAIT (2026-11-10)
+
+- Pack `TRACKING/fixtures/sanguinala_p6_pack.json` : VOD `https://www.twitch.tv/videos/2923715533`, 2 assets 8s, style blur, glow scene, fade black, LUT off (pas de .cube).
+- `run_all.py` : yt-dlp segment (G1) + LOOK blur 9:16 (G3) + preview glow 1 frame (GL2) si asset = reference.
+- E2E : `OUT/p6/A01.mp4` + `OUT/p6/A02.mp4` — 1080x1920 h264 yuv420p, 0 zoom, 0 jump cut, Heisenberg jamais appele.
+- Degrades consignes : LUT absent ; caption Whisper/Blender = housing only ; glow A02 timeout 300s puis relance OK.
+
 ---
 
 ## Phase 7 — Publication + Whop (CDC J3) — hors code
@@ -411,7 +418,7 @@ Commit docs only : `sanguinala-v1 P7: first published campaign log`
 - [x] Phase 3 review W1 + titres
 - [x] Phase 4 glow Modal
 - [x] Phase 5 run_all + portes fixture
-- [ ] Phase 6 E2E vraie VOD N MP4
+- [x] Phase 6 E2E vraie VOD N MP4
 - [ ] Phase 7 log publication (operateur)
 
 ## Ce que VANUS n'est pas

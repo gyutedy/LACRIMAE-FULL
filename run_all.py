@@ -111,6 +111,72 @@ def probe_wh(path: Path) -> tuple[int, int, float]:
     return w, h, dur
 
 
+def seconds_to_hms(seconds: float) -> str:
+    seconds = max(0.0, float(seconds))
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = seconds % 60
+    return f"{h:02d}:{m:02d}:{s:06.3f}"
+
+
+def is_fixture_vod(url: str) -> bool:
+    return not url or url.rstrip("/").endswith("/videos/0")
+
+
+def download_segment(vod_url: str, start: float, end: float, dest: Path) -> int:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    raw = dest.parent / (dest.stem + ".raw.mp4")
+    cmd = [
+        "yt-dlp",
+        "--download-sections", f"*{seconds_to_hms(start)}-{seconds_to_hms(end)}",
+        "--force-keyframes-at-cuts",
+        "-f", "bv*[height<=720]+ba/b",
+        "--no-playlist",
+        "-o", str(raw),
+        vod_url,
+    ]
+    log("G1 SOURCE: yt-dlp segment " + seconds_to_hms(start) + " -> " + seconds_to_hms(end))
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    if r.returncode != 0 or not raw.is_file():
+        log("G1 SOURCE FAIL yt-dlp: " + ((r.stderr or r.stdout or "")[-800:]))
+        return 2
+    expected = max(0.5, end - start)
+    trim = [
+        "ffmpeg", "-y", "-i", str(raw), "-t", f"{expected:.3f}",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "128k", str(dest),
+    ]
+    t = subprocess.run(trim, capture_output=True, text=True)
+    if t.returncode != 0 or not dest.is_file():
+        log("G1 SOURCE FAIL trim: " + (t.stderr or "")[-800:])
+        return 2
+    log(f"G1 SOURCE OK: {dest.name}")
+    return 0
+
+
+def apply_look_blur(src: Path, dst: Path) -> int:
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    vf = (
+        "[0:v]split=2[bg][fg];"
+        "[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=20[b];"
+        "[fg]scale=1080:1920:force_original_aspect_ratio=decrease[f];"
+        "[b][f]overlay=(W-w)/2:(H-h)/2[v]"
+    )
+    cmd = [
+        "ffmpeg", "-y", "-i", str(src),
+        "-filter_complex", vf, "-map", "[v]", "-map", "0:a?",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "128k",
+        str(dst),
+    ]
+    log("G3 LOOK: blur 9:16 0 zoom")
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0 or not dst.is_file():
+        log("G3 LOOK FAIL: " + (r.stderr or "")[-800:])
+        return 2
+    return 0
+
+
 def make_look_sample(path: Path, seconds: float) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     d = max(0.5, float(seconds))
@@ -236,27 +302,56 @@ def main() -> int:
         mi_path.write_text(json.dumps(mi, indent=2), encoding="utf-8")
 
         look_mp4 = args.work / f"{aid}_look.mp4"
+        src_mp4 = args.work / f"{aid}_src.mp4"
         if args.look_dir:
             cand = args.look_dir / f"{aid}_look.mp4"
             if cand.is_file():
                 look_mp4 = cand
+        start = float(mi.get("start_sec", 0))
+        end = float(mi.get("end_sec", 2))
+        vod_url = (pack.get("source") or {}).get("vod_url") or ""
         if not look_mp4.exists():
-            start = float(mi.get("start_sec", 0))
-            end = float(mi.get("end_sec", 2))
-            code = make_look_sample(look_mp4, end - start)
-            if code:
-                return code
+            if is_fixture_vod(vod_url):
+                code = make_look_sample(look_mp4, end - start)
+                if code:
+                    return code
+                src_mp4 = look_mp4
+            else:
+                code = download_segment(vod_url, start, end, src_mp4)
+                if code:
+                    return code
+                code = apply_look_blur(src_mp4, look_mp4)
+                if code:
+                    return code
         else:
             log(f"G1 SOURCE OK: {look_mp4} (look fourni)")
+            if not src_mp4.exists():
+                src_mp4 = look_mp4
 
-        start = float(mi.get("start_sec", 0))
-        end = float(mi.get("end_sec", 0))
-        code = gate_g2(look_mp4, start, end)
+        code = gate_g2(src_mp4, start, end)
         if code:
             return code
         code = gate_g3(look_mp4)
         if code:
             return code
+
+        if aid == pack.get("reference_asset") and (style_pack.get("glow") or {}).get("enabled"):
+            preview_png = args.work / f"{aid}_glow_preview.png"
+            glow = style_pack["glow"]
+            prev = [
+                sys.executable,
+                str(ROOT / "F03_POSTPROD" / "CODEBASE" / "glow" / "preview_glow.py"),
+                "--frame", str(look_mp4),
+                "--out", str(preview_png),
+                "--mode", str(glow.get("mode", "scene")),
+                "--sigma", str(glow.get("sigma", 12)),
+                "--opacity", str(glow.get("opacity", 0.35)),
+            ]
+            code = run(prev)
+            if code or not preview_png.is_file():
+                log("GL2 FAIL: preview frame")
+                return 2
+            log(f"GL2 OK: preview {preview_png.name}")
 
         mont_out = args.work / f"{aid}_mont.mp4"
         code = run([sys.executable, str(F02_PY), "--input", str(look_mp4), "--manifest", str(mi_path), "--work", str(args.work), "--out", str(mont_out)])
