@@ -20,3 +20,6 @@
 | 2026-11-10 | 2 | glow stubs signature §7.2 | — | OK. Modal = Phase 4. |
 | 2026-11-10 | 2 | E2E argparse + portes | M1 L1 G0-S GL1 | OK. broll absent exit 2. cube absent exit 2. split_scene exit 2. blur dry-run 0. sigma 99 exit 2. |
 | 2026-11-10 | 3 | Copie handlers W1 depuis salvage review_dev8 vers F03_PREVIEW App.jsx (LOOK conserve) | W1 T1 | OK. handleLogoClick + confirmLogoPlacement + watermark pack JSON + titles + export review. split_scene retire PUR_STYLE_VALUES. Src complete reste dans SALVAGE (pas collee par-dessus LOOK). |
+| 2026-11-10 | 4 | modal_glow.py pattern F07 (debian_slim + ffmpeg + GPU T4 + volume + local_entrypoint) | GL1 GL2 | OK. scene = gblur mix. subject = rembg d'abord, rembg absent = log + mat rigide. |
+| 2026-11-10 | 4 | preview_glow.py 1 frame PNG | GL2 | OK. scene.png + subject.png + clip mp4. |
+| 2026-11-10 | 4 | E2E tests/test_glow.py | GL1 GL2 | OK. sigma 99 exit 2. opacity 0.9 exit 2. bande caption blanche conservee (mean R>200). rembg import FAIL logue, repli mat. |

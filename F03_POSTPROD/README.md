@@ -7,7 +7,7 @@ Ordre : CAPTION → GLOW → LUT → FADE.
 | Sous-fregate | Source | Portes |
 |--------------|--------|--------|
 | caption/ | F07_CAPTION entier, 0 modification | G4 |
-| glow/ | stubs Phase 2, Modal pattern F07 en Phase 4 | GL1 / GL2 |
+| glow/ | Modal pattern F07 (`modal_glow.py` + `preview_glow.py`) | GL1 / GL2 |
 | lut/lut_apply.py | CDC §7.6 | L1 / F1 |
 | lut/profiles/ | `atom_ic_profiles.json` depuis dev6 | L1 |
 

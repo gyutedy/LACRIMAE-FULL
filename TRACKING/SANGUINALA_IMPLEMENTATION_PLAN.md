@@ -330,6 +330,15 @@ E2E Phase 4 :
 
 Commit : `sanguinala-v1 P4: glow Modal pattern F07 + preview frame`
 
+### Phase 4 — FAIT (2026-11-10)
+
+- `F03_POSTPROD/CODEBASE/glow/modal_glow.py` : pattern F07 (`modal.Image.debian_slim` + `apt ffmpeg` + GPU T4 + volume + `preview` / `render_glow` + `local_entrypoint`).
+- `preview_glow.py` : 1 frame PNG, GL1 avant glow.
+- GL1 : sigma 4–30, opacite 0–0.6, mode scene|subject. Hors plage = exit 2.
+- GL2 : zone caption y>=78 % exclue du mix (sous-titres non blanchis). Mix lineaire, pas screen.
+- Q3 : rembg tente d'abord ; echec = log + mat rigide ellipse. Pas de nouveau modele.
+- E2E local ffmpeg : preview scene + subject, clip mp4, bande caption preservee. Modal remote = credentials operateur.
+
 ---
 
 ## Phase 5 — Orchestrateur + portes G0 a G6 sur pack fixture
@@ -392,7 +401,7 @@ Commit docs only : `sanguinala-v1 P7: first published campaign log`
 - [x] Phase 1 scraps git
 - [x] Phase 2 collage code CDC
 - [x] Phase 3 review W1 + titres
-- [ ] Phase 4 glow Modal
+- [x] Phase 4 glow Modal
 - [ ] Phase 5 run_all + portes fixture
 - [ ] Phase 6 E2E vraie VOD N MP4
 - [ ] Phase 7 log publication (operateur)

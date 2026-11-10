@@ -98,3 +98,4 @@ F06_LUTHER/OUT/*
 # Local production media — use GitHub Releases or CI artifacts
 **/*.mp4
 !**/*.example.mp4
+F03_POSTPROD/CODEBASE/glow/tests/_work/

@@ -2,7 +2,7 @@
 """F03_POSTPROD orchestrateur : CAPTION → GLOW → LUT → FADE, a tous les clips.
 
 CDC §7.7. S'arrete a la premiere porte en echec.
-CAPTION = F07 absorbe (0 modification). GLOW stub Phase 2 / Modal Phase 4.
+CAPTION = F07 absorbe (0 modification). GLOW = Modal pattern F07 (Phase 4).
 LUT+FADE = lut_apply.py (CDC §7.6).
 """
 from __future__ import annotations
