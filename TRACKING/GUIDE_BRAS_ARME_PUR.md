@@ -1,4 +1,14 @@
-# Guide Operateur — Bras arme PUR (dev10-v2)
+# Guide Operateur — Bras arme (SANGUINALA + archive PUR)
+
+> SANGUINALA V1 (2026-11-10) : nouvel arbre. Heisenberg hors flux.
+> Arbre Phase 1 : `BRIDGE/` `F00_SOURCE/` `F01_LOOK/` `F03_PREVIEW/` (LOOK) `F05/` `F06_LUTHER/` `F07_CAPTION/` (housing Phase 2).
+> Pipeline cible : BRIDGE → F00_SOURCE → F01_LOOK → F02_MONTAGE (Phase 2) → F03_POSTPROD → F05 → F06.
+> Styles V1 : `blur` | `reframing` seulement (`split_scene` = V2+).
+> Cahier : `TRACKING/SANGUINALA_CDC_V3.html`. Plan : `TRACKING/SANGUINALA_IMPLEMENTATION_PLAN.md`.
+
+Le texte ci-dessous est l'archive operateur **dev10-v2** (noms anciens BRIDGE_PERTURABO / F00_PUR / F03_PICTOR / F05_CAMOUFLAGE / Heisenberg). Chemins a traduire vers l'arbre ci-dessus.
+
+# Archive — Guide Operateur PUR (dev10-v2)
 
 > Pour le Warsmith qui veut transformer un pack PUR en video publiee.
 > Pas besoin de connaitre le code. Suivre les portes.

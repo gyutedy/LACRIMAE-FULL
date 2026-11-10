@@ -190,6 +190,19 @@ test ! -d BRIDGE_PERTURABO
 
 Commit : `sanguinala-v1 P1: recover F07, LUT profiles, rename frigates from CDC §10`
 
+### Phase 1 — FAIT (2026-11-10)
+
+Chemins reels :
+
+- `F07_CAPTION/` (racine, housing Phase 2)
+- `CONFIG/atom_ic_profiles.json`
+- `BRIDGE/` `F00_SOURCE/` `F01_LOOK/` `F05/` `F06_LUTHER/`
+- `F04_HEISENBERG/` present, hors flux
+- `F03_PREVIEW/` LOOK dev10-v2 intact (150 lignes)
+- `TRACKING/SALVAGE/review_dev7/` + `review_dev8/` (src extraite, pas de checkout ecrasant)
+
+Ecart CDC §10.3 : `git checkout origin/dev7 -- F03_PREVIEW` non execute (detruirait le LOOK). Voir LOG.
+
 ---
 
 ## Phase 2 — Arbre POSTPROD + coller le code NOUVEAU (CDC §7.5 §7.6 §7.7)
@@ -365,8 +378,8 @@ Commit docs only : `sanguinala-v1 P7: first published campaign log`
 
 ## Checklist agent (a cocher dans le LOG)
 
-- [ ] Phase 0 docs + branche poussee
-- [ ] Phase 1 scraps git
+- [x] Phase 0 docs + branche poussee
+- [x] Phase 1 scraps git
 - [ ] Phase 2 collage code CDC
 - [ ] Phase 3 review W1 + titres
 - [ ] Phase 4 glow Modal
