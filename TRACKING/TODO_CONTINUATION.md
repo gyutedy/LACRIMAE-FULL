@@ -1,8 +1,25 @@
-# LACRIMAE dev10-v2 — TODO DE CONTINUATION
+# LACRIMAE — TODO DE CONTINUATION
 
 > Point d'entree obligatoire apres toute reprise.
-> Derniere mise a jour : 2026-10-05.
-> Branche : `dev10-v2` sur `jfbjfojfonf/LACRIMAE`.
+> Derniere mise a jour : 2026-11-10.
+> Branche active : `sanguinala-v1` depuis `dev10-v2`.
+> Depot public : `https://github.com/gyutedy/LACRIMAE-FULL`
+> Statut : Phase 0 du plan SANGUINALA (docs + branche). Pipeline code = pas encore.
+
+## SANGUINALA — lire dans cet ordre
+
+1. `TRACKING/SANGUINALA_CDC_V3.html` — cahier V3, source unique, ne pas devier.
+2. `TRACKING/SANGUINALA_IMPLEMENTATION_PLAN.md` — phases 0–7, ou piller, portes, E2E, commit/push.
+3. `TRACKING/SANGUINALA_LOG.md` — 1 ligne par tentative.
+
+Prochaine etape exacte : Phase 1 du plan (recup git F07 / LUT / renommages CDC §10). Ne pas coder hors plan. Heisenberg hors flux V1.
+
+---
+
+# Archive — LACRIMAE dev10-v2 (avant SANGUINALA)
+
+> Derniere mise a jour historique : 2026-10-05.
+> Branche : `dev10-v2` sur `jfbjfojfonf/LACRIMAE` (miroir `gyutedy/LACRIMAE-FULL`).
 > Statut : A–G poses (F05/F06, F00_PUR, Bridge, Preview, PICTOR, Heisenberg, CI).
 
 ## Etat confirme

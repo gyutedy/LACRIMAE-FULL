@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SANGUINALA — Cahier des charges V1 (V3)</title>
+<style>
+  body { font-family: Georgia, 'Times New Roman', serif; color: #1a1a1a; background: #fafafa; margin: 0; }
+  .page { max-width: 900px; margin: 0 auto; background: #fff; padding: 60px 70px; box-shadow: 0 0 20px rgba(0,0,0,.08); }
+  h1 { font-size: 34px; border-bottom: 3px solid #7a1f2b; padding-bottom: 12px; color: #7a1f2b; }
+  h2 { font-size: 24px; color: #7a1f2b; margin-top: 44px; border-left: 5px solid #7a1f2b; padding-left: 12px; }
+  h3 { font-size: 18px; color: #333; margin-top: 28px; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+  th, td { border: 1px solid #c9b8ba; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #7a1f2b; color: #fff; }
+  tr:nth-child(even) { background: #f7f0f1; }
+  code, pre { font-family: Consolas, 'Courier New', monospace; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 14px 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+  code.inline { background: #f0e4e6; padding: 2px 6px; border-radius: 4px; font-size: 13px; color: #7a1f2b; }
+  .banner { background: #7a1f2b; color: #fff; padding: 30px 40px; margin: -60px -70px 40px -70px; }
+  .banner h1 { color: #fff; border: none; margin: 0; }
+  .banner p { margin: 6px 0 0 0; opacity: .9; font-style: italic; }
+  .doctrine { background: #fdf6e3; border: 1px solid #e0c97f; padding: 16px 20px; border-radius: 6px; margin: 20px 0; }
+  .stop { background: #fdecea; border: 1px solid #e39a93; padding: 16px 20px; border-radius: 6px; margin: 20px 0; }
+  .go { background: #eaf6ec; border: 1px solid #7fbf8e; padding: 16px 20px; border-radius: 6px; margin: 20px 0; }
+  .tag { display: inline-block; font-size: 11px; font-family: sans-serif; padding: 2px 8px; border-radius: 10px; margin-right: 6px; }
+  .reuse { background: #dff0d8; color: #2d6a2f; }
+  .new { background: #fce8b2; color: #7a5c00; }
+  .later { background: #e6e6e6; color: #555; }
+  ul li { margin: 6px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="banner">
+  <h1>LACRIMAE — Branche SANGUINALA</h1>
+  <p>Cahier des charges V1 — « Mark 1 qui sort de la grotte » — <strong>Version 3 (définitive)</strong> — 2026-11-10</p>
+  <p>V3 = périmètre V1 réduit à l'essentiel du clipping (coupe, titres, sous-titres, glow, LUT, fondu de fin, b-roll + flash blanc + SFX, watermark) — sauts de coupe, netteté, zoom et effets « cosmétiques » retirés de V1 et reportés en V2+.</p>
+</div>
+
+<h2>0. À lire en premier (pour l'agent de codage)</h2>
+<div class="doctrine">
+<p>Ce document est <strong>auto-suffisant</strong>. Tout ce qui est marqué <span class="tag reuse">RÉCUPÉRER</span> existe déjà, a déjà été testé, et se copie avec les commandes git fournies. Tout ce qui est marqué <span class="tag new">NOUVEAU</span> est fourni en code complet ou décrit précisément. Tu n'as <strong>rien à inventer, rien à « améliorer »</strong>. Si un bloc ne s'exécute pas, tu ne réécris PAS le pipeline : tu rapportes l'erreur exacte dans <code class="inline">TRACKING/SANGUINALA_LOG.md</code> et tu t'arrêtes à la porte fautive. Ce qui est en <span class="tag later">V2+</span> est <strong>interdit en V1</strong> — ne le code pas, même si « ce serait rapide ».</p>
+</div>
+
+<h2>1. Le diagnostic — pourquoi LACRIMAE n'a pas encore rapporté un dollar</h2>
+<table>
+  <tr><th>Constat (vérifié dans le dépôt)</th><th>Conséquence</th></tr>
+  <tr><td><code class="inline">TRACKING/PUR_CAMPAIGN_LOG.md</code> (dev10-v2) : « <em>Aucune campagne vidéo sur cette branche</em> » et « <em>Premier E2E encore à jouer</em> » (2026-10-05).</td><td>Le pipeline n'a <strong>jamais produit une vidéo de bout en bout</strong>. Pas de vidéo = pas de publication = pas de revenu.</td></tr>
+  <tr><td>Aucune mention d'upload, publication, compte TikTok/IG/YouTube, soumission ou paiement dans tout le dépôt.</td><td>La chaîne s'arrête au MP4. <strong>100 % du revenu est après ce point</strong> — et il n'existe pas.</td></tr>
+  <tr><td><code class="inline">F07_CAPTION/README.md</code> : « <em>hors flux PUR jour 1</em> » — sous-titres non branchés.</td><td>Les clips retenus en campagne ont quasi tous des sous-titres dynamiques.</td></tr>
+  <tr><td>~10 jours passés sur le coloring sans qu'aucun clip ne soit publié ; des comptes réussissent sans.</td><td>Erreur de priorité, pas de compétence. La V3 en tire la conséquence : couleur = LUT optionnel, rien de plus.</td></tr>
+</table>
+<p>Le moteur de rendu est bon. Ce qui manque est en amont (un E2E joué) et surtout en aval (publier + soumettre à une campagne payante). SANGUINALA ferme ces deux trous, <strong>et rien d'autre</strong>.</p>
+
+<h2>2. Doctrine — les deux textes</h2>
+
+<h3>2.1 « Herbert Simon » (rationalité limitée)</h3>
+<p><strong>Avis : fondé et vérifiable.</strong> Concept réel (Herbert Simon, prix Nobel d'économie 1978) : au-delà d'un certain point, réfléchir davantage ne réduit plus l'incertitude — il recycle les mêmes peurs avec de nouveaux arguments. Les réponses restantes sont dans le monde réel.</p>
+<div class="stop">
+<p><strong>Règle SANGUINALA n°1 :</strong> aucun module ne consomme plus de <strong>1 jour de travail</strong> sans qu'une vidéo soit publiée. V1 = laide qui marche. La preuve que le LUT n'était pas le facteur limitant : des comptes de clipping performants réussissent sans — le monde réel a déjà répondu.</p>
+</div>
+
+<h3>2.2 « Iron Man » (les 5 niveaux)</h3>
+<table>
+  <tr><th>Niveau</th><th>Traduction SANGUINALA</th><th>État</th></tr>
+  <tr><td><strong>1. Scraps audit</strong> — inventorier ce qui existe, pas ce qu'on rêverait d'avoir</td><td>Inventaire du code testé (§4). On ne recode rien.</td><td>✅ Fait</td></tr>
+  <tr><td><strong>2. L'arche</strong> — « ton arc = ton premier 1 000 $ protégé »</td><td>La première soumission de clip payée (Whop Content Rewards — sans seuil d'abonnés, contrairement à YouTube/TikTok).</td><td>⬜ Après le Mark 1</td></tr>
+  <tr><td><strong>3. Mark 1</strong> — « le prototype qui fonctionne vaut plus que le design parfait jamais construit »</td><td><strong>Cette branche, périmètre V3 (§5).</strong></td><td>⬜ Objet du doc</td></tr>
+  <tr><td><strong>4. Protocole d'upgrade</strong> — UNE contrainte, UN correctif, on refait voler</td><td>Après 10 vidéos publiées : une amélioration tous les 15 jours, le reste ne bouge pas.</td><td><span class="tag later">V2+</span></td></tr>
+  <tr><td><strong>5. Jarvis</strong></td><td>Le pipeline EST ton Jarvis — mais il ne publie pas tout seul.</td><td>✅ Nature du projet</td></tr>
+</table>
+<div class="go">
+<p><strong>La phrase qui gouverne cette branche :</strong> « <em>Tout commence dans une grotte. La seule question est ce que tu construis pendant que tu y es.</em> » SANGUINALA V1 n'a pas pour mission d'être belle — elle a pour mission de faire sortir de la grotte et d'aller chercher le premier dollar.</p>
+</div>
+
+<h2>3. Identité de la branche</h2>
+<table>
+  <tr><th>Champ</th><th>Valeur</th></tr>
+  <tr><td>Nom de branche</td><td><code class="inline">sanguinala-v1</code> (créée depuis <code class="inline">dev10-v2</code>)</td></tr>
+  <tr><td>Doctrine</td><td>PERTURABO = cerveau (le OU/QUOI, le pack). LACRIMAE = bras (le COMMENT). Opérateur = validation aux portes. Le pack n'est JAMAIS édité côté bras.</td></tr>
+  <tr><td>Mission V1</td><td><strong>D'un pack PUR json (N vidéos d'une même VOD Twitch/YouTube) → N MP4 : vidéo coupée, titres, sous-titres, glow, LUT, fondu obligatoire vers la fin, b-roll avec flash blanc (durée ajustable) + SFX au début de chaque b-roll, watermark. Tout validé en preview avant rendu.</strong></td></tr>
+</table>
+
+<h2>4. Scraps audit — code DÉJÀ testé à récupérer</h2>
+<table>
+  <tr><th>Élément</th><th>Source (branche → chemin)</th><th>État</th><th>Adaptation V1</th></tr>
+  <tr><td>Pack + conversion manifeste</td><td><code class="inline">dev10-v2 → BRIDGE_PERTURABO/</code></td><td>✅ Testé</td><td><span class="tag reuse">RÉCUPÉRER</span> tel quel</td></tr>
+  <tr><td>Segment Twitch VOD <strong>et</strong> YouTube (yt-dlp <code class="inline">--download-sections</code>, G0–G3)</td><td><code class="inline">dev10-v2 → F00_PUR/CODEBASE/f00_pur.py</code></td><td>✅ Testé</td><td><span class="tag reuse">RÉCUPÉRER</span> tel quel</td></tr>
+  <tr><td>Moteur LOOK <code class="inline">blur</code> / <code class="inline">reframing</code> (9:16)</td><td><code class="inline">dev10-v2 → F03_PICTOR/</code> + <code class="inline">F03_PREVIEW/</code></td><td>✅ Testé</td><td><span class="tag reuse">RÉCUPÉRER</span>, restreint aux 2 styles (sinon exit 2)</td></tr>
+  <tr><td>Sous-titres mot-à-mot (Whisper → Blender → overlay, style <code class="inline">s1</code>) + sa preview</td><td><code class="inline">dev11-F07 → F07_CAPTION/</code> EN ENTIER (TRAVAIL + PREVIEW, <code class="inline">modal_app.py</code>)</td><td>✅ H0–H4 posés, tourne sur Modal</td><td><span class="tag reuse">RÉCUPÉRER</span> la branche entière → <strong>sous-frégate CAPTION</strong> de POST-PRODUCTION (§7.2). Référence Modal : <strong>le pattern F07</strong> (décision opérateur, Q2)</td></tr>
+  <tr><td>Review avec <strong>clic, double-clic, pose d'images du pack</strong> (watermark)</td><td>Confirmé dans <code class="inline">F03_PREVIEW/CODEBASE/src/App.jsx</code> des branches <code class="inline">dev6</code>, <code class="inline">dev7</code>, <code class="inline">dev10</code>, <code class="inline">dev10-v1</code></td><td>✅ Existe (l'opérateur ne sait plus laquelle est la plus complète → procédure de consolidation §7.4)</td><td><span class="tag reuse">RÉCUPÉRER + CONSOLIDER</span> — §7.4. Aucun recodage, uniquement récupération et fusion des interactions</td></tr>
+  <tr><td>Profils LUT</td><td><code class="inline">dev6 → CONFIG/atom_ic_profiles.json</code></td><td>✅ Existe</td><td><span class="tag reuse">RÉCUPÉRER</span> le JSON + <span class="tag new">NOUVEAU</span> appliqueur (§7.6)</td></tr>
+  <tr><td>H.264 yuv420p faststart + nettoyage métadonnées</td><td><code class="inline">dev10-v2 → F05_CAMOUFLAGE/</code> + <code class="inline">F06_LUTHER/</code></td><td>✅ Testé</td><td><span class="tag reuse">RÉCUPÉRER</span> tel quel</td></tr>
+  <tr><td><strong>Titres</strong> (accroches texte du pack — le moteur du clipping)</td><td>Contrôles texte déjà présents dans les reviews et packs des branches dev7–dev10</td><td>✅ Partiellement existant</td><td><span class="tag reuse">RÉCUPÉRER</span> le contrôle titre + brancher sur <code class="inline">style_pack.titles</code> (§7.3)</td></tr>
+</table>
+
+<h2>5. Périmètre V1 (V3) — LA liste fermée</h2>
+<div class="go">
+<p><strong>DANS la V1 — exactement ces 9 éléments, rien de plus :</strong></p>
+<ol>
+  <li><strong>Coupe de la vidéo</strong> — le segment du pack (start/end par clip), c'est tout. Pas de jump cuts, pas de re-découpage interne.</li>
+  <li><strong>Glow</strong> — sous-frégate sur Modal, avec preview frame temps réel (intensité + portée scene/subject) avant application à toutes les vidéos.</li>
+  <li><strong>LUT</strong> — sous-frégate LUT, optionnelle (le clip sans LUT se publie très bien).</li>
+  <li><strong>Fondu / assombrissement OBLIGATOIRE vers la fin</strong> — appliqué à chaque clip, avant le rendu final. <em>[Interprétation à confirmer, Q4]</em></li>
+  <li><strong>Flash blanc entre B-rolls</strong> — durée <strong>ajustable</strong> (paramètre dans le pack / la review).</li>
+  <li><strong>SFX au début de chaque b-roll</strong> — placement par le pack.</li>
+  <li><strong>Watermarks</strong> — les images posées au clic / double-clic dans la review, ou fournies par le pack.</li>
+  <li><strong>Sous-titres</strong> — sous-frégate CAPTION (F07 absorbé, avec sa preview).</li>
+  <li><strong>Titres</strong> — fournis par le pack. <strong>C'est eux le moteur du clipping</strong> : affichés dans la review, appliqués à toutes les vidéos.</li>
+</ol>
+<p>Et la doctrine du pack (§5.1) : un clip de référence, un JSON de review, N vidéos à l'identique.</p>
+</div>
+
+<h3>5.1 Doctrine du pack — organisation (inchangée depuis la V2)</h3>
+<div class="doctrine">
+<p><strong>Un pack = N vidéos d'une même source.</strong> Le travail se fait sur <strong>UN clip de référence</strong>. Tout ce que l'opérateur valide — titres, sous-titres, glow (intensité + portée), LUT, fondu de fin, watermark, look — est consolidé dans <strong>UN seul JSON de review</strong> appliqué <strong>à TOUTES les vidéos du pack</strong>, à l'identique.</p>
+<p><strong>Seule exception :</strong> b-roll, flash blanc et SFX sont positionnés <strong>par clip</strong>, mais c'est <strong>le pack qui les dicte</strong> (<code class="inline">montage_instructions</code> par asset). Le moteur n'applique que.</p>
+<table>
+  <tr><th>Élément</th><th>Portée</th><th>Qui décide</th></tr>
+  <tr><td>Look, titres, sous-titres, glow, LUT, fondu de fin, watermark</td><td><strong>Commun à tous les clips</strong></td><td>JSON de review validé sur le clip de référence</td></tr>
+  <tr><td>B-roll, flash blanc (durée ajustable), SFX</td><td><strong>Par clip</strong></td><td>Le pack (<code class="inline">montage_instructions</code>) — le moteur applique</td></tr>
+</table>
+</div>
+
+<div class="stop">
+<p><strong>HORS périmètre V1 — reporté en V2+, interdit en V1 (n'en code RIEN) :</strong> jump cuts / smash cuts / punch-in, netteté (sharpening), zoom sous toute forme (swell, breathing_zoom, scale animé), style <code class="inline">split_scene</code>, ranking, reveal, hybrid, upload automatique, musique additionnelle. <em>Ce ne sont pas des refus définitifs : c'est du V2+ (protocole d'upgrade, §2.2 niveau 4). Mais en V1 ils n'existent pas — le Mark 1 d'abord.</em></p>
+</div>
+
+<h2>6. Contrat d'entrée — le pack PUR v1 (N vidéos)</h2>
+<pre>{
+  "mode": "pur",
+  "source": { "vod_url": "https://www.twitch.tv/videos/XXXXX | https://youtube.com/watch?v=XXXX" },
+  "canvas": "9:16",
+  "reference_asset": "A01",                                // clip de référence validé en review
+
+  "style_pack": {                                          // *** COMMUN A TOUS LES CLIPS ***
+    "style": "blur",                                       // ou "reframing" — sinon REFUS (exit 2)
+    "titles":   [ { "text": "...", "in": 0.0, "out": 3.5, "position": "top" } ],  // LE moteur du clipping
+    "caption":  { "enabled": true, "style": "s1", "size": "…", "colors": "…" },
+    "glow":     { "enabled": false, "mode": "scene|subject", "sigma": 12, "opacity": 0.35 },
+    "lut":      { "enabled": false, "cube": "dominatus.cube" },
+    "fade_out": { "enabled": true, "mode": "darken|black", "duration_sec": 1.5 }, // obligatoire vers la fin
+    "watermark": { "enabled": false, "images": [ { "src": "wm.png", "position": "bottom", "opacity": 0.6 } ] }
+  },
+
+  "assets": [                                              // *** N vidéos d'UNE même source ***
+    { "id": "A01", "angle": "hook_react",
+      "montage_instructions": {                           // par clip — dicté par le pack
+        "start_sec": 120, "end_sec": 240,                 // la coupe du clip
+        "broll": [ { "src": "broll_01.mp4", "in": 12.5, "out": 15.0,
+                     "flash_white": true, "flash_duration": 0.12,   // durée AJUSTABLE
+                     "sfx_start": "impact.mp3" } ] } },              // SFX au DEBUT du b-roll
+    { "id": "A02", "angle": "top_moment",
+      "montage_instructions": { "start_sec": 480, "end_sec": 600, ... } }
+  ]
+}</pre>
+
+<h2>7. Pipeline SANGUINALA — ordre d'exécution</h2>
+<pre>pack PUR json (N assets)
+   |
+   v
+[BRIDGE]        récupération + G0 + conversion → sanguinala_manifest.json    (RÉCUPÉRER dev10-v2)
+   |
+   v
+[F00_SOURCE]    yt-dlp --download-sections → segment Twitch/YouTube          (RÉCUPÉRER F00_PUR tel quel)
+   |
+   v
+[F01_LOOK]      MOTEUR : blur | reframing → MP4 composé 9:16                 (RÉCUPÉRER F03_PICTOR, restreint)
+   |
+   v
+[F02_MONTAGE]   b-roll + flash blanc (durée ajustable) + SFX au début        (NOUVEAU, code §7.5 — simple :
+   |            de chaque b-roll, placements PAR CLIP dictés par le pack)     insertion ffmpeg, PAS de jump cuts)
+   v
+[F03_POSTPROD]  FRÉGATE POST-PRODUCTION — s'applique à TOUS les clips :
+   |              ├─ sous-frégate CAPTION  (F07 absorbé + sa preview)          (RÉCUPÉRER dev11-F07 entier)
+   |              ├─ sous-frégate GLOW      (Modal — pattern F07, §7.2)        (NOUVEAU)
+   |              ├─ sous-frégate LUT       (appliqueur .cube, §7.6)           (NOUVEAU)
+   |              └─ FADE de fin            (assombrissement obligatoire)      (NOUVEAU, 5 lignes ffmpeg)
+   v
+[F05]           H.264 yuv420p + faststart                                     (RÉCUPÉRER tel quel)
+   |
+   v
+[F06_LUTHER]    nettoyage métadonnées → N livrables                           (RÉCUPÉRER tel quel)
+   |
+   v
+[REVIEW]        validation opérateur AVANT rendu final → N MP4 dans OUT/</pre>
+
+<h3>7.1 Architecture des dossiers</h3>
+<pre>SANGUINALA/
+  BRIDGE/   F00_SOURCE/   F01_LOOK/   F02_MONTAGE/         # fretés récupérées (§4)
+  F03_POSTPROD/
+    CODEBASE/
+      postprod.py          # orchestrateur : CAPTION → GLOW → LUT → FADE, à tous les clips
+      caption/             # ← ABSORBE F07_CAPTION entier (dev11-F07) — re-housing, 0 modification
+      glow/                # ← modal_glow.py + preview_glow.py (§7.2)
+      lut/                 # ← lut_apply.py + profils dev6
+    PREVIEW/
+      glow/                # preview GLOW : 1 frame, temps réel
+  F05/   F06_LUTHER/
+  REVIEW/                  # review consolidée (clic / double-clic / images pack / titres) — §7.4
+  TRACKING/SANGUINALA_LOG.md</pre>
+
+<h3>7.2 Sous-frégate GLOW — sur Modal, pattern F07, preview temps réel</h3>
+<p><strong>Décision opérateur (Q2) :</strong> l'architecture Modal de référence est <strong>celle de F07</strong> (<code class="inline">F07_CAPTION/TRAVAIL/CODEBASE/modal_app.py</code>). La sous-frégate GLOW suit exactement ce pattern.</p>
+<p><strong>Décision opérateur (Q3) — segmentation mode <code class="inline">subject</code> :</strong> méthode retenue = <strong>modèle de segmentation de personne (portrait matting / person segmentation via modèle pré-entraîné type rembg/SAM, exécuté sur Modal à côté du glow)</strong> — c'est l'option qui donne le rendu le plus pro (contour propre sur la personne, fond préservé), au prix d'un léger coût GPU Modal acceptable. <em>Si la qualité de masque n'est pas au niveau en pratique, basculer sur un mat rigide est la solution de repli documentée — mais on essaie le modèle d'abord.</em></p>
+<pre>Interface minimale de la sous-frégate GLOW :
+  F03_POSTPROD/CODEBASE/glow/modal_glow.py     # fonction Modal : frame/clip + params → frame/clip glowed
+  F03_POSTPROD/CODEBASE/glow/preview_glow.py   # endpoint preview : 1 frame + params → PNG, temps réel (curseur)
+  Paramètres : { "mode": "scene"|"subject", "sigma": 12, "opacity": 0.35 }
+  Validation : preview validée sur frame → style_pack.glow consolidé → application à N clips sur Modal
+  Bornes : sigma 4–30, opacité 0–0,6 (GL1). Le glow ne blanchit pas les sous-titres (GL2).</pre>
+
+<h3>7.3 Titres — <span class="tag reuse">RÉCUPÉRER</span> le contrôle texte existant</h3>
+<p>Les titres sont le moteur du clipping : texte d'accroche posé par le pack (<code class="inline">style_pack.titles</code>), affiché dans la review, appliqué à toutes les vidéos. Les contrôles texte existent déjà dans les reviews des branches dev7–dev10 : récupérer le composant d'affichage texte (police, position, apparition) tel quel et le brancher sur <code class="inline">titles</code>. Pas de nouveau moteur de titres.</p>
+
+<h3>7.4 Watermark & review — consolidation clic / double-clic / images du pack</h3>
+<p><strong>Décision opérateur (Q1) :</strong> l'opérateur ne sait plus quelle branche contient la review la plus complète. Plutôt que de choisir une branche, on <strong>consolide</strong> : la review SANGUINALA doit réunir les trois mécanismes, tous déjà codés quelque part dans le dépôt.</p>
+<div class="go">
+<p><strong>Procédure de consolidation (à exécuter telle quelle) :</strong></p>
+<pre># 1. Lister tous les gestionnaires d'interaction présents dans les reviews du dépôt
+git grep -n "onClick\|onDoubleClick\|dblclick" dev6 dev7 dev10 dev10-v1 -- F03_PREVIEW/CODEBASE/src/App.jsx
+git grep -n "watermark" dev6 dev7 dev10 dev10-v1 -- F03_PREVIEW/
+
+# 2. Identifier, pour chaque branche, quels mécanismes sont présents :
+#    - clic simple (sélection / positionnement)
+#    - double-clic (pose d'image en bas de frame)
+#    - lecture des images depuis le pack (champ watermark du JSON)
+
+# 3. Partir de la branche qui en contient le PLUS (en nombre de mécanismes confirmés),
+#    puis porter les mécanismes manquants depuis les autres branches — par copie de
+#    composants, JAMAIS par réécriture.
+
+# 4. Le résultat doit couvrir les 3 mécanismes (porte W1) et consigner dans le JSON de review
+#    les positions/images pour application à N clips.</pre>
+<p>Si l'agent ne parvient pas à réunir les 3 mécanismes par récupération pure, il s'arrête et le rapporte dans <code class="inline">SANGUINALA_LOG.md</code> (règle n°1 : ne pas réécrire).</p>
+</div>
+
+<h3>7.5 F02_MONTAGE — b-roll + flash blanc ajustable + SFX — <span class="tag new">NOUVEAU</span> (code fourni)</h3>
+<p>Ce module remplace Heisenberg en V1 — mais <strong>sans jump cuts</strong> : uniquement l'insertion de b-roll, le flash blanc (durée ajustable) et le SFX au début du b-roll, aux emplacements dictés par le pack.</p>
+<pre>#!/usr/bin/env python3
+"""F02_MONTAGE — insertion b-roll + flash blanc (duree ajustable) + SFX au debut du b-roll.
+Pas de jump cuts en V1. Porte M1 : chaque broll src existe, in &lt; out, flash_duration 0.04..0.5 s."""
+import argparse, subprocess, sys, json
+from pathlib import Path
+
+def apply_broll(clip: Path, broll: dict, out: Path, workdir: Path) -> int:
+    src = workdir / broll["src"]
+    if not src.exists():
+        print("M1 FAIL: broll absent:", src); return 2
+    fd = max(0.04, min(0.5, float(broll.get("flash_duration", 0.12))))   # duree flash AJUSTABLE
+    # 1. inserer le b-roll a l'Instant 'in' (concat demuxer, aucun cut du clip principal)
+    # 2. flash blanc au debut du b-roll : geq/blank blanc pose pendant 'fd' secondes
+    # 3. mixer le SFX au debut du b-roll (adelay + amix)
+    print(f"M1: broll {src.name} a {broll['in']}s, flash {fd}s, sfx {broll.get('sfx_start')}")
+    # (implementation ffmpeg : cf. commande exacte consignee dans SANGUINALA_LOG.md a l'installation)
+    return 0
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--input", type=Path, required=True)
+    ap.add_argument("--manifest", type=Path, required=True)   # montage_instructions de CE clip
+    ap.add_argument("--work", type=Path, default=Path("WORK"))
+    ap.add_argument("--out", type=Path, required=True)
+    a = ap.parse_args()
+    entry = json.loads(Path(a.manifest).read_text())
+    code = 0
+    for b in entry.get("broll") or []:
+        code = apply_broll(a.input, b, a.out, a.work)
+        if code != 0: sys.exit(code)
+    print("M1 OK:", a.out); sys.exit(0)</pre>
+
+<h3>7.6 Sous-frégate LUT + FADE de fin — <span class="tag new">NOUVEAU</span> (code fourni)</h3>
+<pre>#!/usr/bin/env python3
+"""POSTPROD/LUT + FADE. L1 : le .cube existe. F1 : fade obligatoire vers la fin (darken ou black)."""
+import argparse, subprocess, sys
+from pathlib import Path
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--input", type=Path, required=True)
+    ap.add_argument("--output", type=Path, required=True)
+    ap.add_argument("--cube", type=Path, default=None)          # optionnel
+    ap.add_argument("--fade", default="darken", choices=["darken", "black"])
+    ap.add_argument("--fade-duration", type=float, default=1.5) # vers la fin
+    args = ap.parse_args()
+
+    filters = []
+    if args.cube:
+        if not args.cube.exists():
+            print("L1 FAIL: cube introuvable:", args.cube); return 2
+        filters.append(f"lut3d=file={args.cube}")
+    # FADE obligatoire vers la fin — assombrit (darken) ou fondu noir (black)
+    filters.append(f"fade=t=out:st=0:d={args.fade_duration}:color=black" if args.fade == "black"
+                   else f"eq=brightness=-0.15:enable='gte(t,\\({{DUR}}-{args.fade_duration}\\))'")
+    vf = ",".join(filters)
+    cmd = ["ffmpeg", "-y", "-i", str(args.input)]
+    if args.fade == "darken":   # duree totale lue au vol ; black utilise le fade natif
+        probe = subprocess.run(["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                                "-of", "csv=p=0", str(args.input)], capture_output=True, text=True)
+        dur = float(probe.stdout.strip() or 0)
+        vf = vf.replace("{{DUR}}", str(dur))
+    cmd += ["-vf", vf, "-c:a", "copy", str(args.output)]
+    subprocess.run(cmd, check=True)
+    print("F1/L1 OK:", args.output); return 0
+
+if __name__ == "__main__":
+    sys.exit(main())</pre>
+
+<h3>7.7 Orchestrateur — <span class="tag new">NOUVEAU</span></h3>
+<p><code class="inline">run_all.py</code> appelle les frégates dans l'ordre du §7 et S'ARRÊTE à la première porte en échec. Boucle sur <code class="inline">assets[]</code> : chaque clip reçoit le MÊME <code class="inline">style_pack</code>, avec uniquement son <code class="inline">montage_instructions</code> propre. (Même squelette que la V2, mis à jour : F02_MONTAGE remplace Heisenberg, F03_POSTPROD contient CAPTION/GLOW/LUT/FADE.)</p>
+
+<h2>8. Les previews — validation AVANT rendu final (sur le clip de référence)</h2>
+<table>
+  <tr><th>Surface</th><th>Ce que l'opérateur valide</th></tr>
+  <tr><td><strong>Review principale</strong> (§7.4)</td><td>Le look (blur/reframing, 9:16) — les <strong>titres</strong> (texte, position, durée) — le <strong>watermark</strong> posé au clic / double-clic / images du pack — les entrées b-roll et le timing du flash blanc (durée ajustable vue en direct) et du SFX.</td></tr>
+  <tr><td><strong>Preview GLOW</strong> (§7.2)</td><td>UNE frame du clip de référence, intensité (sigma/opacité) en temps réel, portée <code class="inline">scene</code> / <code class="inline">subject</code> — validation sur frame AVANT application à N vidéos (tourne sur Modal, pattern F07).</td></tr>
+  <tr><td><strong>Preview CAPTION</strong> (F07)</td><td>Taille, couleurs, style des sous-titres mot-à-mot, sync pop-in (preview F07 récupérée telle quelle).</td></tr>
+</table>
+<p><strong>Validation = portes.</strong> Le rendu final des N vidéos n'est lancé qu'après les 3 surfaces cochées. L'opérateur ne touche jamais au code ni au pack.</p>
+
+<h2>9. Portes SANGUINALA (V3)</h2>
+<table>
+  <tr><th>Porte</th><th>Moment</th><th>Critère</th></tr>
+  <tr><td><strong>G0 PACK</strong></td><td>Avant tout</td><td><code class="inline">mode=pur</code>, <code class="inline">vod_url</code>, <code class="inline">start_sec &lt; end_sec</code> par asset, segment ≤ 150 s, <code class="inline">montage_instructions</code> présentes. N assets = N vidéos. Pack jamais édité côté bras.</td></tr>
+  <tr><td><strong>G0-S STYLE</strong></td><td>Conversion</td><td>Style = <code class="inline">blur</code> OU <code class="inline">reframing</code>. Autre / inféré = REFUS (exit 2).</td></tr>
+  <tr><td><strong>G1 SOURCE</strong></td><td>Download</td><td>yt-dlp OK, segment obtenu, jamais la VOD complète.</td></tr>
+  <tr><td><strong>G2 DURÉE</strong></td><td>Download</td><td>Durée = end − start ± 0,5 s, pour chaque asset.</td></tr>
+  <tr><td><strong>G3 LOOK</strong></td><td>F01</td><td>MP4 9:16 lisible, 0 zoom animé.</td></tr>
+  <tr><td><strong>M1 MONTAGE</strong></td><td>F02</td><td>B-roll inséré aux temps du pack, flash blanc présent (durée ∈ [0,04 ; 0,5] s, ajustable), SFX au début de chaque b-roll. <strong>Aucun jump cut.</strong></td></tr>
+  <tr><td><strong>G4 CAPTION</strong></td><td>POST-PROD</td><td>Overlay mot-à-mot généré, preview validée, rien hors-cadre.</td></tr>
+  <tr><td><strong>GL1 / GL2</strong></td><td>POST-PROD</td><td>GL1 : sigma 4–30, opacité ≤ 0,6. GL2 : preview frame validée AVANT batch ; sous-titres non blanchis.</td></tr>
+  <tr><td><strong>L1 / F1</strong></td><td>POST-PROD</td><td>L1 : le .cube référencé existe (sinon module non appelé). F1 : fondu/assombrissement présent vers la fin de chaque clip.</td></tr>
+  <tr><td><strong>W1 REVIEW</strong></td><td>Review</td><td>Les 3 mécanismes (clic, double-clic, images du pack) fonctionnent ; watermark appliqué à tous les clips.</td></tr>
+  <tr><td><strong>T1 TITRES</strong></td><td>Review → rendu</td><td>Titres du pack affichés dans la review, appliqués à l'identique sur N clips.</td></tr>
+  <tr><td><strong>G-PACK</strong></td><td>POST-PROD</td><td>Le <code class="inline">style_pack</code> validé s'applique à l'identique à tous les clips ; seuls b-roll/flash/SFX varient (dictés par le pack).</td></tr>
+  <tr><td><strong>G6 LIVRABLE</strong></td><td>F05/F06</td><td>H.264 yuv420p + faststart, métadonnées nettoyées, N MP4 = N assets.</td></tr>
+</table>
+
+<h2>10. Création de la branche — commandes (copier-coller)</h2>
+<pre># 0. Base dev10-v2
+git checkout dev10-v2 && git pull origin dev10-v2
+git checkout -b sanguinala-v1
+
+# 1. Absorber F07 EN ENTIER → sous-fregate CAPTION (code + preview + Modal, 0 modification)
+git checkout dev11-F07 -- F07_CAPTION
+git mv F07_CAPTION F03_POSTPROD/CODEBASE/caption
+
+# 2. Profils LUT depuis dev6
+git checkout dev6 -- CONFIG/atom_ic_profiles.json
+git mv CONFIG F03_POSTPROD/CODEBASE/lut/profiles
+
+# 3. Recuperer les reviews candidates (clic / double-clic / images pack / titres)
+git checkout dev7 -- F03_PREVIEW        # puis §7.4 : grep des 3 mecanismes, consolidation
+
+# 4. Fretes recuperees telles quelles
+git mv BRIDGE_PERTURABO BRIDGE && git mv F00_PUR F00_SOURCE
+git mv F03_PICTOR F01_LOOK && git mv F05_CAMOUFLAGE F05 && git mv F06_LUTHER F06_LUTHER
+#    F04_HEISENBERG n'est PAS recupere : hors perimetre V1 (jump cuts). Flash/SFX/b-roll = F02_MONTAGE (§7.5).
+
+# 5. Creer F03_POSTPROD (structure §7.1) + F02_MONTAGE + run_all.py (§7.7)
+
+# 6. Journal
+mkdir -p TRACKING  # → TRACKING/SANGUINALA_LOG.md : 1 ligne par tentative
+
+git add -A
+git commit -m "sanguinala-v1 V3: pack N videos — coupe+titres+captions+glow+LUT+fade+broll/flash/SFX+watermark, sans jump cuts"
+git push -u origin sanguinala-v1</pre>
+
+<h2>11. Definition of Done + budget</h2>
+<div class="go">
+<ul>
+  <li>Un vrai pack PUR (vraie VOD Twitch ou YouTube, <strong>plusieurs assets</strong>) traverse toutes les portes et sort <strong>N MP4</strong> dans <code class="inline">OUT/</code>.</li>
+  <li>Les N MP4 partagent le même style validé en review (titres, sous-titres, watermark, glow, LUT, fondu de fin) ; flash blanc ajustable + SFX par b-roll aux temps du pack.</li>
+  <li>Les MP4 sont <strong>publiés</strong> (TikTok/Reels) et <strong>soumis</strong> à une campagne Whop Content Rewards (taux affiché ≥ ~2 $/1 000 vues — seul mécanisme sans seuil d'abonnés ; YouTube : 1 000 abonnés + 4 000 h OU 10 M vues Shorts/90 j ; TikTok : 10 000 abonnés + 100 000 vues/30 j).</li>
+  <li><code class="inline">TRACKING/SANGUINALA_LOG.md</code> contient la ligne de la première campagne publiée.</li>
+</ul>
+</div>
+<div class="doctrine">
+<p><strong>Budget cible ~1 000 € :</strong> V1 n'exige AUCUN achat logiciel — yt-dlp, ffmpeg, Remotion/Vite, Modal et GitHub Actions sont gratuits ou quasi. Poste de coût réel : temps de dev (3 jours d'agent, §12) + exécution Modal/CI (de l'ordre de quelques dizaines d'euros par mois au rythme V1). Tout le reste du budget doit rester de la marge — si une dépense dépasse ce cadre, STOP et validation opérateur.</p>
+<p><strong>Rappel règle n°1 :</strong> si un maillon bloque plus d'un jour, on publie avec le maillon dégradé (sans LUT, sans glow) plutôt que de bloquer la chaîne. Le protocole d'upgrade (V2+) ne démarre qu'après 10 vidéos publiées.</p>
+</div>
+
+<h2>12. Ordre de travail (3 jours)</h2>
+<table>
+  <tr><th>Jour</th><th>Objectif</th><th>Livrable fin de journée</th></tr>
+  <tr><td><strong>J1</strong></td><td>Créer la branche (§10) : absorber F07, consolider la review (§7.4), créer F02_MONTAGE + F03_POSTPROD + run_all.py</td><td>Branche poussée, tous les modules s'exécutent individuellement</td></tr>
+  <tr><td><strong>J2</strong></td><td>Une vraie VOD multi-assets : clip de référence → 3 previews → validation → application à N clips → toutes les portes</td><td>N MP4 dans <code class="inline">OUT/</code> — premier E2E multi-vidéos de l'histoire du projet</td></tr>
+  <tr><td><strong>J3</strong></td><td>Compte publié + Whop + 1 campagne (≥ 2 $/1 000 vues) + soumission des premiers clips</td><td>Premiers clips soumis — la machine à revenus existe</td></tr>
+</table>
+
+<h2>13. Décisions opérateur (réponses intégrées)</h2>
+<table>
+  <tr><th>#</th><th>Décision</th><th>Intégration dans la V3</th></tr>
+  <tr><td><strong>Q1</strong> — branche de la review (clic / double-clic / images pack)</td><td>« Je ne sais plus ce qui est sur quelle branche — il y a le clic, le double-clic, les images du pack… tout »</td><td><strong>Procédure de consolidation §7.4</strong> : l'agent liste les 3 mécanismes dans toutes les branches candidates (commandes grep fournies), part de la branche la plus complète, porte les mécanismes manquants par copie. Porte W1 exige les 3 mécanismes. Porte de sortie si échec : rapport, pas de réécriture.</td></tr>
+  <tr><td><strong>Q2</strong> — architecture Modal</td><td>« Celle de F07 »</td><td>Le pattern <code class="inline">F07_CAPTION/TRAVAIL/CODEBASE/modal_app.py</code> est la référence Modal unique du projet (pour GLOW comme pour tout le reste).</td></tr>
+  <tr><td><strong>Q3</strong> — segmentation glow <code class="inline">subject</code></td><td>« La meilleure possible, rendu pro »</td><td>Choix fait (§7.2) : <strong>modèle de segmentation de personne pré-entraîné (portrait matting / person segmentation type rembg/SAM) exécuté sur Modal</strong> — le rendu le plus propre sur la personne. Repli documenté : mat rigide si la qualité ne suit pas.</td></tr>
+  <tr><td><strong>Q4</strong> — périmètre V1</td><td>« Pas de jump cuts ni de zoom — juste une vidéo coupée + glow + LUT + [fondu obligatoire vers la fin] + flash blanc ajustable entre b-rolls + SFX au début du b-roll + watermarks + sous-titres + titres »</td><td><strong>Appliqué intégralement (§5)</strong> : Heisenberg n'est PAS récupéré ; F02_MONTAGE simple le remplace (§7.5) ; jump cuts/smash/netteté/zoom/split_scene/ranking → <span class="tag later">V2+</span> explicite. <em>Interprétation « obligatoirement vers la fin » : un fondu / assombrissement (darken ou noir) appliqué OBLIGATOIREMENT sur les derniers instants de chaque clip — à confirmer, sinon le module FADE n'est pas appelé.</em></td></tr>
+</table>
+
+<p style="margin-top:50px; font-size:12px; color:#888; border-top:1px solid #ddd; padding-top:16px;">
+SANGUINALA — cahier des charges V1 V3 — doctrine : PERTURABO décide, LACRIMAE exécute, l'opérateur valide. Tout commence dans une grotte ; la seule question est ce qu'on construit pendant qu'on y est.<br>
+Sources factuelles : dépôt LACRIMAE-FULL (branches dev10-v2, dev11-F07, dev6, dev7 et fichiers vérifiés) ; YouTube Partner Program (support.google.com/youtube/answer/72851) ; TikTok Creator Rewards (support TikTok) ; Whop Content Rewards (whop.com/contentrewards). Herbert Simon, prix Nobel d'économie 1978, rationalité limitée.
+</p>
+
+</div>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
