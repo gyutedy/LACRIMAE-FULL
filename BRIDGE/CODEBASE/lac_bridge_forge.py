@@ -16,7 +16,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-BRIDGE_BASE = ROOT / "BRIDGE_PERTURABO"
+BRIDGE_BASE = ROOT / "BRIDGE"
 BRIDGE_IN = BRIDGE_BASE / "IN"
 BRIDGE_OUT = BRIDGE_BASE / "OUT"
 
@@ -175,7 +175,7 @@ def main():
     parser.add_argument("--pack-filter", default=None, help="Filtre du pack a recuperer (ex: pur_A01)")
     parser.add_argument("--pur", action="store_true", help="MODE PUR (seul mode de ce bridge)")
     parser.add_argument("--canvas", default="9:16", choices=["9:16", "16:9", "1:1"])
-    parser.add_argument("--style", default=None, choices=["blur", "split_scene", "reframing"],
+    parser.add_argument("--style", default=None, choices=["blur", "reframing"],
                         help="Style LOOK force par l'operateur")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()

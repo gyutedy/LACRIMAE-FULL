@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(here, '../..');
-const ALLOWED = new Set(['blur', 'split_scene', 'reframing']);
+const ALLOWED = new Set(['blur', 'reframing']);
 const ZOOM_BANNED = /\b(zoompan|breathing_zoom|swell|scaleX\(|scaleY\()\b/i;
 
 const args = process.argv.slice(2);
@@ -26,9 +26,9 @@ const get = (flag) => {
 };
 const has = (flag) => args.includes(flag);
 
-const manifestPath = get('--manifest') || resolve(ROOT, 'BRIDGE_PERTURABO/OUT/pur_manifest.json');
-const clipsDir = get('--clips') || resolve(ROOT, 'F00_PUR/OUT');
-const outDir = get('--out') || resolve(ROOT, 'F03_PICTOR/OUT');
+const manifestPath = get('--manifest') || resolve(ROOT, 'BRIDGE/OUT/pur_manifest.json');
+const clipsDir = get('--clips') || resolve(ROOT, 'F00_SOURCE/OUT');
+const outDir = get('--out') || resolve(ROOT, 'F01_LOOK/OUT');
 const entryArg = get('--entry');
 const dryRun = has('--dry-run');
 
@@ -40,7 +40,7 @@ function fail(msg, code = 1) {
 if (!existsSync(manifestPath)) fail(`manifeste introuvable : ${manifestPath}`);
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
 if (manifest.schema_version !== 'dev10.pur.v1') fail(`schema_version=${manifest.schema_version}, attendu dev10.pur.v1`);
-if (!ALLOWED.has(String(manifest.style || ''))) fail(`style « ${manifest.style} » hors blur/split_scene/reframing (G0-S / P2)`, 2);
+if (!ALLOWED.has(String(manifest.style || ''))) fail(`style « ${manifest.style} » hors blur/reframing (G0-S / P2, split_scene = V2+)`, 2);
 
 const compositionSrc = resolve(here, 'src/PurLook.jsx');
 const previewSrc = resolve(ROOT, 'F03_PREVIEW/CODEBASE/src/preview/_purPackComposition.jsx');

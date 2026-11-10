@@ -260,6 +260,16 @@ test -f F03_POSTPROD/CODEBASE/lut/profiles/atom_ic_profiles.json
 
 Commit : `sanguinala-v1 P2: paste F02_MONTAGE + LUT/FADE + postprod tree from CDC`
 
+### Phase 2 — FAIT (2026-11-10)
+
+- `F02_MONTAGE/CODEBASE/montage.py` collage §7.5
+- `F03_POSTPROD/CODEBASE/lut/lut_apply.py` collage §7.6
+- `F03_POSTPROD/CODEBASE/caption/` = F07 housing
+- `F03_POSTPROD/CODEBASE/lut/profiles/atom_ic_profiles.json`
+- glow stubs signature §7.2
+- `run_all.py` + G0-S blur|reframing
+- ffmpeg montage : pas encore installe (CDC : consigner a l'installation)
+
 ---
 
 ## Phase 3 — Review W1 + titres T1 (CDC §7.3 §7.4)
@@ -380,7 +390,7 @@ Commit docs only : `sanguinala-v1 P7: first published campaign log`
 
 - [x] Phase 0 docs + branche poussee
 - [x] Phase 1 scraps git
-- [ ] Phase 2 collage code CDC
+- [x] Phase 2 collage code CDC
 - [ ] Phase 3 review W1 + titres
 - [ ] Phase 4 glow Modal
 - [ ] Phase 5 run_all + portes fixture

@@ -1,4 +1,39 @@
-# LACRIMAE dev10-v2 — PUR GATES
+# LACRIMAE — PORTES (SANGUINALA V1 + archive PUR)
+
+## SANGUINALA V1 (CDC §9) — portes actives
+
+```text
+pack PUR
+  → BRIDGE G0
+  → F00_SOURCE G1/G2
+  → F01_LOOK G3 (blur|reframing)
+  → F02_MONTAGE M1 (0 jump cut)
+  → F03_POSTPROD G4 CAPTION / GL1-GL2 GLOW / L1 LUT / F1 FADE
+  → REVIEW W1 / T1
+  → F05 / F06 G6
+```
+
+| Porte | Moment | Critere |
+|-------|--------|---------|
+| **G0 PACK** | Avant tout | `mode=pur`, `vod_url`, `start_sec < end_sec` par asset, segment <= 150 s, `montage_instructions` |
+| **G0-S STYLE** | Conversion | `blur` OU `reframing`. Autre / infere / `split_scene` = REFUS exit 2 |
+| **G1 SOURCE** | Download | yt-dlp OK, segment seulement |
+| **G2 DUREE** | Download | end − start ± 0,5 s |
+| **G3 LOOK** | F01 | MP4 9:16, 0 zoom anime |
+| **M1 MONTAGE** | F02 | b-roll aux temps du pack, flash [0,04 ; 0,5] s, SFX debut, 0 jump cut |
+| **G4 CAPTION** | POST-PROD | overlay mot-a-mot, preview validee |
+| **GL1 / GL2** | POST-PROD | sigma 4–30, opacite <= 0,6 ; preview frame avant batch |
+| **L1 / F1** | POST-PROD | .cube existe si LUT ; fade/darken vers la fin |
+| **W1 REVIEW** | Review | clic, double-clic, images pack |
+| **T1 TITRES** | Review → rendu | titres pack sur N clips |
+| **G-PACK** | POST-PROD | meme style_pack sur N clips |
+| **G6 LIVRABLE** | F05/F06 | H.264 yuv420p faststart, N MP4 = N assets |
+
+Heisenberg / P3 TEMPS (jump cuts) = hors flux V1.
+
+---
+
+# Archive — PUR GATES dev10-v2
 
 ## Doctrine
 

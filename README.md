@@ -1,90 +1,49 @@
-# LACRIMAE — branche `dev10-v2`
+# LACRIMAE — branche `sanguinala-v1`
 
 > *For the Angel's Tears shall become gold.*
 
-Bras arme du mode PUR de PERTURABO. Pack in, MP4 out. Arbre neuf : aucune
-heritage ranking / reveal / hybrid / Signum.
-
-Branche `dev10-v2` : contrat + portes figes, salvage A–G (F05/F06,
-F00_PUR, Bridge PUR, F03_PREVIEW LOOK, F03_PICTOR, F04_HEISENBERG,
-workflow `dev10_pur_render.yml`).
+Bras arme SANGUINALA V1 (V3). Pack PUR in, N MP4 out.
+Cahier : `TRACKING/SANGUINALA_CDC_V3.html`. Plan : `TRACKING/SANGUINALA_IMPLEMENTATION_PLAN.md`.
 
 ## Doctrine
 
 | Role | Qui | Decide | Ne fait PAS |
 |------|-----|--------|-------------|
-| Cerveau creatif | PERTURABO | Le OU et le QUOI (segment, overlay, moments, B-roll) | La physique des effets, le rendu, les gates |
-| Bras arme | LACRIMAE | Le COMMENT (execution, portes, agregation) | Choisir un segment, ecrire une accroche, zoomer |
+| Cerveau creatif | PERTURABO | Le OU et le QUOI | La physique, le rendu, les gates |
+| Bras arme | LACRIMAE | Le COMMENT | Editer le pack, zoomer, jump-cutter (V1) |
 | Operateur | Warsmith | Validation aux portes | — |
 
-Le pack PERTURABO n'est jamais modifie cote LACRIMAE. Correction = retour
-forge.
-
-## Pipeline
+## Pipeline V1
 
 ```text
-PERTURABO EXPORT / production_pack_pur_*.json
+pack PUR json (N assets)
         |
         v
-[BRIDGE_PERTURABO]  fetch + conversion → pur_manifest.json
-        |
+[BRIDGE]         G0 + conversion
         v
-[F00_PUR]  yt-dlp --download-sections → pur_<angle>.mp4 + pur_sources.json
-        |
+[F00_SOURCE]     yt-dlp --download-sections
         v
-[F03_PREVIEW]  validation visuelle (blur / split / reframing)
-        |
+[F01_LOOK]       blur | reframing → MP4 9:16
         v
-[F03_PICTOR]  Remotion — LOOK only → mp4 compose (sans zoom)
-        |
+[F02_MONTAGE]    b-roll + flash blanc ajustable + SFX (0 jump cut)
         v
-[F04_HEISENBERG]  FFmpeg — TEMPS : jump cuts, SFX, B-roll, flash, punch-in-cut → MP4 reel
-        |
+[F03_POSTPROD]   CAPTION → GLOW → LUT → FADE
         v
-[F05_CAMOUFLAGE] → [F06_LUTHER] → livrable
+[F05] → [F06_LUTHER] → N livrables OUT/
 ```
 
-1 asset (A01, A02, …) = 1 video finale = 1 job. Le pack = l'ensemble des assets.
+`run_all.py` s'arrete a la premiere porte. `F04_HEISENBERG` existe hors flux.
 
-## Frégates
+## Styles V1
 
-| Frégate | Mission | Sortie |
-|---------|---------|--------|
-| BRIDGE_PERTURABO | Recupere le pack, gate G0, convertit en manifeste `dev10.pur.v1` | `pur_manifest.json` |
-| F00_PUR | Telecharge UNIQUEMENT le segment VOD | `pur_<angle>.mp4` + `pur_sources.json` |
-| F03_PREVIEW | Validation visuelle, 3 styles, overlay | manifeste valide |
-| F03_PICTOR | Rendu LOOK (meme moteur que la preview) | MP4 compose, framing fixe |
-| F04_HEISENBERG | Execute le temps du pack sur le MP4 | MP4 reel (cuts / SFX / B-roll) |
-| F05_CAMOUFLAGE | Reencodage H.264 yuv420p, faststart | MP4 camoufle |
-| F06_LUTHER | Nettoyage metadonnees | livrable |
-
-## Styles autorises (jour 1)
-
-Uniquement trois : `blur`, `split_scene`, `reframing`. Ranking hors scope.
-
-## Interdits (non negociables)
-
-- Zoom, swell, scale anime, breathing_zoom — bannis PICTOR et Heisenberg.
-- Punch-in = **cut**, jamais une animation : a `in` on coupe, on joue
-  uniquement `[in, out]` recadre plus serre ; a `out` on recoupe, retour
-  framing normal.
-- SIGNUM n'existe plus.
-- Le pack n'est jamais edite cote bras arme.
+`blur` | `reframing`. Autre (dont `split_scene`) = G0-S exit 2. V2+.
 
 ## Docs
 
 | Document | Role |
 |----------|------|
-| `TRACKING/TODO_CONTINUATION.md` | Point d'entree apres toute reprise |
-| `TRACKING/PUR_GATES.md` | Portes de validation |
-| `TRACKING/GUIDE_BRAS_ARME_PUR.md` | Guide operateur PERTURABO → LACRIMAE |
-| `TRACKING/GUIDE_UTILISATION.md` | Guide d'utilisation local / CI |
-| `TRACKING/PUR_CAMPAIGN_LOG.md` | Journal des campagnes |
-
-## Hors arbre (purge `dev10`)
-
-F00H, F01_CANTOR, F02_VISIO, SeatRoom, modal, ORACLE, F04_SIGNUM,
-ranking / reveal / hybrid / music, workflows dev4–dev9.
-
-> LACRIMAE — le bras arme n'interprete pas : il execute, il bloque, il prouve.
-> Warsmith tranche. PERTURABO cree.
+| `TRACKING/SANGUINALA_CDC_V3.html` | Cahier V3 |
+| `TRACKING/SANGUINALA_IMPLEMENTATION_PLAN.md` | Phases 0–7 |
+| `TRACKING/SANGUINALA_LOG.md` | 1 ligne par tentative |
+| `TRACKING/TODO_CONTINUATION.md` | Reprise sandbox |
+| `TRACKING/PUR_GATES.md` | Portes |

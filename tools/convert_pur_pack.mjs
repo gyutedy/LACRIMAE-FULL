@@ -11,14 +11,14 @@
  *     --out pur_manifest.json [--style blur] [--canvas 9:16]
  *
  * G0-S : style declare par le pack OU --style operateur.
- * Styles autorises : blur | split_scene | reframing.
+ * Styles autorises V1 : blur | reframing. split_scene = V2+.
  * Infere = REFUS (exit 2). Ranking refuse.
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ALLOWED_STYLES = new Set(['blur', 'split_scene', 'reframing']);
+const ALLOWED_STYLES = new Set(['blur', 'reframing']);
 const here = dirname(fileURLToPath(import.meta.url));
 
 const args = process.argv.slice(2);
@@ -36,13 +36,13 @@ const refManifest = get('--style-params') || '';
 const styleArg = get('--style');
 
 if ((!packPath && !packsList) || !outPath) {
-  console.error('usage: convert_pur_pack.mjs (--pack <pack.json> | --packs <p1.json,p2.json,…>) --out <manifest.json> [--canvas 9:16] [--clip clips/x.mp4] [--fps 30] [--style blur|split_scene|reframing] [--style-params ref_manifest.json]');
+  console.error('usage: convert_pur_pack.mjs (--pack <pack.json> | --packs <p1.json,p2.json,…>) --out <manifest.json> [--canvas 9:16] [--clip clips/x.mp4] [--fps 30] [--style blur|reframing] [--style-params ref_manifest.json]');
   process.exit(1);
 }
 
 if (styleArg && !ALLOWED_STYLES.has(String(styleArg).toLowerCase())) {
   console.error(`✗ REFUSÉ : --style « ${styleArg} » non autorisé.`);
-  console.error('  → blur | split_scene | reframing uniquement. Ranking refuse.');
+  console.error('  → blur | reframing uniquement (SANGUINALA V1). split_scene = V2+. Ranking refuse.');
   process.exit(2);
 }
 
@@ -69,12 +69,12 @@ const checkStyleDeclared = (pack, source) => {
   const declaredStyle = String(pack.montage_style || pack.montage_instructions?.metadata?.style || '').toLowerCase();
   if (declaredStyle && !ALLOWED_STYLES.has(declaredStyle) && !styleArg) {
     console.error(`✗ REFUSÉ : style pack « ${declaredStyle} » non autorisé (${source}).`);
-    console.error('  → relance avec --style blur|split_scene|reframing, ou regenere le pack cote PERTURABO.');
+    console.error('  → relance avec --style blur|reframing, ou regenere le pack cote PERTURABO.');
     process.exit(2);
   }
   if (!declaredStyle && !styleArg) {
     console.error(`✗ REFUSÉ : pack sans style déclaré (${source} : montage_style/metadata.style absent).`);
-    console.error('  → relance avec --style blur|split_scene|reframing (ton choix),');
+    console.error('  → relance avec --style blur|reframing (ton choix),');
     console.error('    ou regenere le pack cote PERTURABO avec montage_style.');
     process.exit(2);
   }
@@ -90,7 +90,7 @@ const refuseUnknown = (manifest) => {
     process.exit(2);
   }
   if (!ALLOWED_STYLES.has(String(manifest.style || '').toLowerCase())) {
-    console.error(`✗ REFUSÉ : style « ${manifest.style} » hors blur/split_scene/reframing.`);
+    console.error(`✗ REFUSÉ : style « ${manifest.style} » hors blur/reframing.`);
     process.exit(2);
   }
 };

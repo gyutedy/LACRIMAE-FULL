@@ -14,3 +14,8 @@
 | 2026-11-10 | 1 | git mv F00_PUR F00_SOURCE | — | OK. |
 | 2026-11-10 | 1 | git mv F03_PICTOR F01_LOOK | — | OK. |
 | 2026-11-10 | 1 | git mv F05_CAMOUFLAGE F05 | — | OK. F06_LUTHER inchange. F04_HEISENBERG present hors flux. |
+| 2026-11-10 | 2 | mkdir F02/F03_POSTPROD/REVIEW/OUT + git mv F07 → caption + LUT profiles | — | OK. |
+| 2026-11-10 | 2 | collage montage.py §7.5 + lut_apply.py §7.6 | — | OK tel quel. ffmpeg montage non installe (CDC ligne commentaire). |
+| 2026-11-10 | 2 | postprod.py + run_all.py squelette §7.7 | — | OK. Heisenberg jamais appele. G0-S blur\|reframing. |
+| 2026-11-10 | 2 | glow stubs signature §7.2 | — | OK. Modal = Phase 4. |
+| 2026-11-10 | 2 | E2E argparse + portes | M1 L1 G0-S GL1 | OK. broll absent exit 2. cube absent exit 2. split_scene exit 2. blur dry-run 0. sigma 99 exit 2. |
