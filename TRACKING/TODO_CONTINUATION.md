@@ -4,7 +4,7 @@
 > Derniere mise a jour : 2026-11-10.
 > Branche active : `sanguinala-v1` depuis `dev10-v2`.
 > Depot public : `https://github.com/gyutedy/LACRIMAE-FULL`
-> Statut : Phase 4 FAIT (GLOW Modal pattern F07 + preview 1 frame). Prochaine = Phase 5 (run_all + portes G0-G6).
+> Statut : Phase 5 FAIT (run_all + portes G0-G6 sur fixture 2 assets). Prochaine = Phase 6 (E2E vraie VOD).
 
 ## SANGUINALA — lire dans cet ordre
 
@@ -12,7 +12,7 @@
 2. `TRACKING/SANGUINALA_IMPLEMENTATION_PLAN.md` — phases 0–7, ou piller, portes, E2E, commit/push.
 3. `TRACKING/SANGUINALA_LOG.md` — 1 ligne par tentative.
 
-Prochaine etape exacte : Phase 5 du plan (`run_all.py` + portes G0-G6 sur pack fixture). Heisenberg hors flux V1.
+Prochaine etape exacte : Phase 6 du plan (vraie VOD Twitch/YouTube, N assets, 3 previews, N MP4 dans OUT/). Heisenberg hors flux V1.
 
 ---
 

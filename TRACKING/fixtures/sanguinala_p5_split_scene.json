@@ -1,0 +1,26 @@
+{
+  "mode": "pur",
+  "source": { "vod_url": "https://www.twitch.tv/videos/0" },
+  "canvas": "9:16",
+  "reference_asset": "A01",
+  "style_pack": {
+    "style": "split_scene",
+    "titles": [],
+    "caption": { "enabled": false },
+    "glow": { "enabled": false, "mode": "scene", "sigma": 12, "opacity": 0.35 },
+    "lut": { "enabled": false },
+    "fade_out": { "enabled": true, "mode": "black", "duration_sec": 0.4 }
+  },
+  "assets": [
+    {
+      "id": "A01",
+      "angle": "hook_react",
+      "montage_instructions": { "start_sec": 0, "end_sec": 2, "broll": [] }
+    },
+    {
+      "id": "A02",
+      "angle": "top_moment",
+      "montage_instructions": { "start_sec": 0, "end_sec": 2, "broll": [] }
+    }
+  ]
+}

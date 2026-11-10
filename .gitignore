@@ -99,3 +99,4 @@ F06_LUTHER/OUT/*
 **/*.mp4
 !**/*.example.mp4
 F03_POSTPROD/CODEBASE/glow/tests/_work/
+WORK/

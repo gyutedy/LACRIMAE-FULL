@@ -362,6 +362,14 @@ python3 run_all.py --pack <fixture> --work WORK --out OUT
 
 Commit : `sanguinala-v1 P5: run_all orchestrator + gates G0-G6 on fixture pack`
 
+### Phase 5 — FAIT (2026-11-10)
+
+- Fixture `TRACKING/fixtures/sanguinala_p5_pack.json` : 2 assets, style blur, glow scene, fade black, caption enabled, LUT off (pas de .cube).
+- `run_all.py` : G0 → G0-S → G4/GL1 → par asset G1 (sample local 9:16) G2 G3 M1 POSTPROD F05 F06 → G-PACK / G6. Heisenberg jamais appele.
+- split_scene fixture = G0-S exit 2.
+- E2E : `python3 run_all.py --pack TRACKING/fixtures/sanguinala_p5_pack.json --work WORK/p5 --out OUT` → 2 MP4 = 2 assets.
+- Vraie VOD = Phase 6.
+
 ---
 
 ## Phase 6 — Premier E2E multi-videos vraie VOD (CDC J2 / DoD partiel)
@@ -402,7 +410,7 @@ Commit docs only : `sanguinala-v1 P7: first published campaign log`
 - [x] Phase 2 collage code CDC
 - [x] Phase 3 review W1 + titres
 - [x] Phase 4 glow Modal
-- [ ] Phase 5 run_all + portes fixture
+- [x] Phase 5 run_all + portes fixture
 - [ ] Phase 6 E2E vraie VOD N MP4
 - [ ] Phase 7 log publication (operateur)
 

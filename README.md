@@ -34,6 +34,10 @@ pack PUR json (N assets)
 
 `run_all.py` s'arrete a la premiere porte. `F04_HEISENBERG` existe hors flux.
 
+```bash
+python3 run_all.py --pack TRACKING/fixtures/sanguinala_p5_pack.json --work WORK --out OUT
+```
+
 ## Styles V1
 
 `blur` | `reframing`. Autre (dont `split_scene`) = G0-S exit 2. V2+.

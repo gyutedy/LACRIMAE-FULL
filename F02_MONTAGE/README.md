@@ -6,4 +6,4 @@ Pas de jump cuts en V1. Remplace Heisenberg (hors flux).
 Code : `CODEBASE/montage.py` — collage CDC §7.5.
 
 Porte **M1** : chaque `broll.src` existe, `in < out`, `flash_duration` clamp 0.04..0.5.
-Commande ffmpeg exacte : a consigner dans `TRACKING/SANGUINALA_LOG.md` a l'installation (CDC).
+Si `broll` est vide : passthrough (copie input → out). Broll declare mais fichier absent = exit 2.

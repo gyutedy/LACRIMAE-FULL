@@ -23,3 +23,6 @@
 | 2026-11-10 | 4 | modal_glow.py pattern F07 (debian_slim + ffmpeg + GPU T4 + volume + local_entrypoint) | GL1 GL2 | OK. scene = gblur mix. subject = rembg d'abord, rembg absent = log + mat rigide. |
 | 2026-11-10 | 4 | preview_glow.py 1 frame PNG | GL2 | OK. scene.png + subject.png + clip mp4. |
 | 2026-11-10 | 4 | E2E tests/test_glow.py | GL1 GL2 | OK. sigma 99 exit 2. opacity 0.9 exit 2. bande caption blanche conservee (mean R>200). rembg import FAIL logue, repli mat. |
+| 2026-11-10 | 5 | run_all.py portes G0-G6 + fixture 2 assets | G0 G0-S G1 G2 G3 M1 G4 GL1 L1/F1 G-PACK G6 | OK. split_scene dry-run exit 2. blur 2 clips → OUT/A01.mp4 + OUT/A02.mp4. Heisenberg jamais appele. VOD = sample local 9:16 (pas de VOD payante). |
+| 2026-11-10 | 5 | montage.py passthrough si broll vide | M1 | OK. copy input → out. broll absent reste exit 2. |
+| 2026-11-10 | 5 | lut_apply.py fade black + video-only | L1 F1 | OK. -an si pas d'audio. cube absent reste exit 2. |

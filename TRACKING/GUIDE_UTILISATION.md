@@ -1,6 +1,25 @@
-# Guide d'utilisation — LACRIMAE dev10-v2
+# Guide d'utilisation — LACRIMAE SANGUINALA V1
 
-A–G poses : Bridge, F00_PUR, Preview, PICTOR, Heisenberg, F05, F06, CI.
+Branche `sanguinala-v1`. Pack PUR in, N MP4 out. Heisenberg hors flux.
+
+## SANGUINALA — run_all
+
+```bash
+python3 run_all.py --pack TRACKING/fixtures/sanguinala_p5_pack.json --work WORK --out OUT
+```
+
+Portes : G0 PACK, G0-S (blur|reframing), G1 sample/VOD, G2 duree, G3 LOOK 9:16, M1 montage, G4 caption, GL1 glow, L1/F1 lut+fade, G-PACK, G6 F05/F06.
+
+Fixture Phase 5 = 2 assets locaux 9:16, **sans VOD payante**. Vraie VOD = Phase 6.
+
+```bash
+python3 run_all.py --pack TRACKING/fixtures/sanguinala_p5_split_scene.json --dry-run
+# G0-S FAIL exit 2
+```
+
+---
+
+# Archive — LACRIMAE dev10-v2
 
 ## Vocabulaire
 

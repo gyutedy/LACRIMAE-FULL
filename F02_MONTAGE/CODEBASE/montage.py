@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """F02_MONTAGE — insertion b-roll + flash blanc (duree ajustable) + SFX au debut du b-roll.
 Pas de jump cuts en V1. Porte M1 : chaque broll src existe, in < out, flash_duration 0.04..0.5 s."""
-import argparse, subprocess, sys, json
+import argparse, shutil, sys, json
 from pathlib import Path
 
 def apply_broll(clip: Path, broll: dict, out: Path, workdir: Path) -> int:
@@ -28,4 +28,7 @@ if __name__ == "__main__":
     for b in entry.get("broll") or []:
         code = apply_broll(a.input, b, a.out, a.work)
         if code != 0: sys.exit(code)
+    a.out.parent.mkdir(parents=True, exist_ok=True)
+    if not a.out.exists():
+        shutil.copy2(a.input, a.out)
     print("M1 OK:", a.out); sys.exit(0)

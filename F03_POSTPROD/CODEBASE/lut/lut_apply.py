@@ -12,23 +12,35 @@ def main() -> int:
     ap.add_argument("--fade-duration", type=float, default=1.5) # vers la fin
     args = ap.parse_args()
 
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    probe = subprocess.run(["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                            "-of", "csv=p=0", str(args.input)], capture_output=True, text=True)
+    dur = float(probe.stdout.strip() or 0)
+    audio = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a:0",
+                            "-show_entries", "stream=index", "-of", "csv=p=0", str(args.input)],
+                           capture_output=True, text=True)
     filters = []
     if args.cube:
         if not args.cube.exists():
             print("L1 FAIL: cube introuvable:", args.cube); return 2
         filters.append(f"lut3d=file={args.cube}")
-    # FADE obligatoire vers la fin — assombrit (darken) ou fondu noir (black)
-    filters.append(f"fade=t=out:st=0:d={args.fade_duration}:color=black" if args.fade == "black"
-                   else f"eq=brightness=-0.15:enable='gte(t,\\({{DUR}}-{args.fade_duration}\\))'")
+    fade_d = min(float(args.fade_duration), max(0.01, dur))
+    fade_st = max(0.0, dur - fade_d)
+    if args.fade == "black":
+        filters.append(f"fade=t=out:st={fade_st:.3f}:d={fade_d:.3f}:color=black")
+    else:
+        filters.append(f"eq=brightness=-0.15:enable='gte(t,{fade_st:.3f})'")
     vf = ",".join(filters)
-    cmd = ["ffmpeg", "-y", "-i", str(args.input)]
-    if args.fade == "darken":   # duree totale lue au vol ; black utilise le fade natif
-        probe = subprocess.run(["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
-                                "-of", "csv=p=0", str(args.input)], capture_output=True, text=True)
-        dur = float(probe.stdout.strip() or 0)
-        vf = vf.replace("{{DUR}}", str(dur))
-    cmd += ["-vf", vf, "-c:a", "copy", str(args.output)]
-    subprocess.run(cmd, check=True)
+    cmd = ["ffmpeg", "-y", "-i", str(args.input), "-vf", vf]
+    if (audio.stdout or "").strip():
+        cmd += ["-c:a", "copy"]
+    else:
+        cmd += ["-an"]
+    cmd += [str(args.output)]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0:
+        print("F1/L1 FAIL:", (r.stderr or "")[-2000:])
+        return 2
     print("F1/L1 OK:", args.output); return 0
 
 if __name__ == "__main__":
