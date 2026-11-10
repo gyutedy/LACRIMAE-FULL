@@ -19,3 +19,4 @@
 | 2026-11-10 | 2 | postprod.py + run_all.py squelette §7.7 | — | OK. Heisenberg jamais appele. G0-S blur\|reframing. |
 | 2026-11-10 | 2 | glow stubs signature §7.2 | — | OK. Modal = Phase 4. |
 | 2026-11-10 | 2 | E2E argparse + portes | M1 L1 G0-S GL1 | OK. broll absent exit 2. cube absent exit 2. split_scene exit 2. blur dry-run 0. sigma 99 exit 2. |
+| 2026-11-10 | 3 | Copie handlers W1 depuis salvage review_dev8 vers F03_PREVIEW App.jsx (LOOK conserve) | W1 T1 | OK. handleLogoClick + confirmLogoPlacement + watermark pack JSON + titles + export review. split_scene retire PUR_STYLE_VALUES. Src complete reste dans SALVAGE (pas collee par-dessus LOOK). |

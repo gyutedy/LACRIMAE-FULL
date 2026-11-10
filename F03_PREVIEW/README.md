@@ -1,23 +1,16 @@
-# F03_PREVIEW
+# F03_PREVIEW — SANGUINALA LOOK + W1
 
-Validation visuelle (porte P1). Vite + player. Trois styles uniquement :
-`blur`, `split_scene`, `reframing`. Overlay 1–3 lignes, statique debut → fin.
+Validation visuelle avant rendu. Vite + Remotion player.
 
-## Contrats
+Styles V1 : `blur` | `reframing`. `split_scene` = V2+. Zero zoom.
 
-| | Chemin |
-|--|--------|
-| IN | `pur_manifest.json` + clips F00_PUR |
-| OUT | manifeste valide par l'operateur |
-| Code | `CODEBASE/` (Vite + Remotion player) |
+Moteur LOOK = `dev10-v2` (`_purPackComposition.jsx`, `bridgeClipper.js`).
 
-## Interdits
+Portees depuis salvage dev8 **par copie de handlers** (CDC §7.4) :
 
-- Zoom, swell, breathing_zoom
-- Ranking
-- Modification du pack PERTURABO
+- W1 clic / double-clic pose logo (`handleLogoClick` / `confirmLogoPlacement`)
+- W1 images watermark du pack JSON
+- T1 titres `style_pack.titles`
+- Export JSON review unique (`sanguinala_review.json`) applique a N clips
 
-Le moteur LOOK de la preview est le meme que F03_PICTOR (parite par
-construction). Rendu CI interdit sans P1.
-
-Voir `TRACKING/GUIDE_BRAS_ARME_PUR.md` etape 3.
+IN : pack PUR json. OUT : JSON review. Pack jamais edite.

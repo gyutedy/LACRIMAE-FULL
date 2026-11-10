@@ -11,7 +11,7 @@ const PUR_CANVAS = {
   '1:1': { width: 1080, height: 1080 },
 };
 
-export const PUR_STYLE_VALUES = ['reframing', 'blur', 'split_scene'];
+export const PUR_STYLE_VALUES = ['reframing', 'blur'];
 
 export const PUR_STYLE_PARAMS_DEFAULTS = {
   blur: { degree: 24, bg_scale: 118, fg_scale: 72, fg_y_pct: 62 },

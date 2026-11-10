@@ -4,7 +4,7 @@
 > Derniere mise a jour : 2026-11-10.
 > Branche active : `sanguinala-v1` depuis `dev10-v2`.
 > Depot public : `https://github.com/gyutedy/LACRIMAE-FULL`
-> Statut : Phase 2 FAIT (collage CDC §7.5/§7.6 + run_all + housing F07). Prochaine = Phase 3 (review W1).
+> Statut : Phase 3 FAIT (W1/T1 copies dans LOOK). Prochaine = Phase 4 (GLOW Modal pattern F07).
 
 ## SANGUINALA — lire dans cet ordre
 
@@ -12,7 +12,7 @@
 2. `TRACKING/SANGUINALA_IMPLEMENTATION_PLAN.md` — phases 0–7, ou piller, portes, E2E, commit/push.
 3. `TRACKING/SANGUINALA_LOG.md` — 1 ligne par tentative.
 
-Prochaine etape exacte : Phase 3 du plan (review W1 + titres T1, copie depuis TRACKING/SALVAGE/review_dev8). Ne pas recoder. Heisenberg hors flux V1.
+Prochaine etape exacte : Phase 4 du plan (GLOW Modal = pattern F07 caption/modal_app.py). Ne pas inventer de nouveau modele hors CDC Q3. Heisenberg hors flux V1.
 
 ---
 

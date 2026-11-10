@@ -391,7 +391,7 @@ Commit docs only : `sanguinala-v1 P7: first published campaign log`
 - [x] Phase 0 docs + branche poussee
 - [x] Phase 1 scraps git
 - [x] Phase 2 collage code CDC
-- [ ] Phase 3 review W1 + titres
+- [x] Phase 3 review W1 + titres
 - [ ] Phase 4 glow Modal
 - [ ] Phase 5 run_all + portes fixture
 - [ ] Phase 6 E2E vraie VOD N MP4
