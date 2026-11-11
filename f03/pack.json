@@ -1,0 +1,35 @@
+{
+  "mode": "pur",
+  "source": { "vod_url": "https://www.twitch.tv/videos/2923715533" },
+  "canvas": "9:16",
+  "reference_asset": "A01",
+  "style_pack": {
+    "style": "blur",
+    "titles": [{ "text": "NOVEMBER FOOLS", "in": 0.0, "out": 3.0, "position": "top" }],
+    "caption": { "enabled": true, "style": "s1" },
+    "glow": { "enabled": true, "mode": "scene", "sigma": 12, "opacity": 0.35 },
+    "lut": { "enabled": false, "cube": "dominatus.cube" },
+    "fade_out": { "enabled": true, "mode": "black", "duration_sec": 0.8 },
+    "watermark": { "enabled": false, "images": [] }
+  },
+  "assets": [
+    {
+      "id": "A01",
+      "angle": "hook_react",
+      "montage_instructions": {
+        "start_sec": 120,
+        "end_sec": 128,
+        "broll": []
+      }
+    },
+    {
+      "id": "A02",
+      "angle": "top_moment",
+      "montage_instructions": {
+        "start_sec": 480,
+        "end_sec": 488,
+        "broll": []
+      }
+    }
+  ]
+}

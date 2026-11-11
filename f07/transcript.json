@@ -1,0 +1,16 @@
+{
+  "words": [
+    { "word": "NOVEMBER", "start": 0.0, "end": 0.6 },
+    { "word": "FOOLS", "start": 0.6, "end": 1.2 },
+    { "word": "WATCH", "start": 1.2, "end": 1.8 },
+    { "word": "THIS", "start": 1.8, "end": 2.3 },
+    { "word": "CLIP", "start": 2.3, "end": 2.9 },
+    { "word": "RIGHT", "start": 2.9, "end": 3.4 },
+    { "word": "NOW", "start": 3.4, "end": 4.0 },
+    { "word": "SANGUINALA", "start": 4.0, "end": 4.8 },
+    { "word": "CAPTION", "start": 4.8, "end": 5.5 },
+    { "word": "PREVIEW", "start": 5.5, "end": 6.2 },
+    { "word": "STYLE", "start": 6.2, "end": 6.8 },
+    { "word": "ONE", "start": 6.8, "end": 7.5 }
+  ]
+}
