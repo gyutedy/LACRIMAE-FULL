@@ -4,7 +4,7 @@
 > Derniere mise a jour : 2026-11-10.
 > Branche active : `sanguinala-v1` depuis `dev10-v2`.
 > Depot public : `https://github.com/gyutedy/LACRIMAE-FULL`
-> Statut : Phase 6 FAIT (E2E VOD twitch 2923715533, 2 MP4). Prochaine = Phase 7 (publication operateur, hors code).
+> Statut : Phase 7 PARTIEL (MID publie YouTube Shorts M9P1qCwsgR0). Whop et A01/A02 encore ouverts.
 
 ## SANGUINALA — lire dans cet ordre
 
@@ -12,7 +12,7 @@
 2. `TRACKING/SANGUINALA_IMPLEMENTATION_PLAN.md` — phases 0–7, ou piller, portes, E2E, commit/push.
 3. `TRACKING/SANGUINALA_LOG.md` — 1 ligne par tentative.
 
-Prochaine etape exacte : Phase 7 du plan (publication manuelle TikTok/Reels + Whop, hors code). Heisenberg hors flux V1.
+Prochaine etape exacte : brancher les 3 previews (review W1/T1, glow, caption F07) avant le prochain rendu. Whop encore ouvert. Heisenberg hors flux V1.
 
 ---
 

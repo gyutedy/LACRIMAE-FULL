@@ -408,6 +408,11 @@ Livrable : une ligne dans `TRACKING/SANGUINALA_LOG.md` et `PUR_CAMPAIGN_LOG.md` 
 
 Commit docs only : `sanguinala-v1 P7: first published campaign log`
 
+### Phase 7 — PARTIEL (2026-11-10)
+
+- Operateur a publie MID seulement : https://youtube.com/shorts/M9P1qCwsgR0
+- A01/A02 non publies. Whop Content Rewards non soumis.
+
 ---
 
 ## Checklist agent (a cocher dans le LOG)
@@ -419,7 +424,7 @@ Commit docs only : `sanguinala-v1 P7: first published campaign log`
 - [x] Phase 4 glow Modal
 - [x] Phase 5 run_all + portes fixture
 - [x] Phase 6 E2E vraie VOD N MP4
-- [ ] Phase 7 log publication (operateur)
+- [x] Phase 7 log publication (operateur) — MID YouTube Shorts, Whop ouvert
 
 ## Ce que VANUS n'est pas
 

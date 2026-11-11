@@ -33,3 +33,4 @@
 | 2026-11-10 | 6 | run_all P6 A01 | G6 | OK. OUT/p6/A01.mp4 1080x1920 h264 yuv420p. |
 | 2026-11-10 | 6 | glow A02 timeout 300s mid-file | GL | FAIL partiel (1.9s). Relance glow_clip OK 8s. Consigné, pas de rewrite pipeline. |
 | 2026-11-10 | 6 | premier E2E multi-videos | G-PACK G6 | OK. OUT/p6/A01.mp4 + A02.mp4. LUT off (pas de .cube). Caption housing only. Heisenberg jamais appele. 0 jump cut 0 zoom. |
+| 2026-11-10 | 7 | publication operateur MID | — | OK. YouTube Shorts https://youtube.com/shorts/M9P1qCwsgR0 — clip MID seulement (01:13:20–01:13:28). A01/A02 non publies. Whop non soumis. |
