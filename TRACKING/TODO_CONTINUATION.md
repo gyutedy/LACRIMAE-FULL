@@ -4,7 +4,7 @@
 > Derniere mise a jour : 2026-11-10.
 > Branche active : `sanguinala-v1` depuis `dev10-v2`.
 > Depot public : `https://github.com/gyutedy/LACRIMAE-FULL`
-> Statut : Phase 7 PARTIEL (MID publie YouTube Shorts M9P1qCwsgR0). Whop et A01/A02 encore ouverts.
+> Statut : Phase 7 PARTIEL (MID YouTube Shorts M9P1qCwsgR0). F03_PREVIEW + F07 CAPTION PREVIEW branches dans run_all. Prochain test = pack + --preview-stage puis N MP4.
 
 ## SANGUINALA — lire dans cet ordre
 
@@ -12,7 +12,7 @@
 2. `TRACKING/SANGUINALA_IMPLEMENTATION_PLAN.md` — phases 0–7, ou piller, portes, E2E, commit/push.
 3. `TRACKING/SANGUINALA_LOG.md` — 1 ligne par tentative.
 
-Prochaine etape exacte : brancher les 3 previews (review W1/T1, glow, caption F07) avant le prochain rendu. Whop encore ouvert. Heisenberg hors flux V1.
+Prochaine etape exacte : test pack `--preview-stage` (F03_PREVIEW 5174 + F07 5173), valider JSON review + s1, puis `run_all` N MP4. Whop encore ouvert. Heisenberg hors flux V1.
 
 ---
 

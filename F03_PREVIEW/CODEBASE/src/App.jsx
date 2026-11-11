@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Player } from '@remotion/player';
 import { PurPackComposition } from './preview/_purPackComposition';
 import {
@@ -84,24 +84,46 @@ export default function App() {
     setLogoPending(null);
   };
 
+  const loadPacks = (loaded, nextStyle) => {
+    setPacks(loaded);
+    setEntryIndex(0);
+    const first = loaded[0] || {};
+    const sp = first.style_pack || {};
+    const st = sp.style || nextStyle || style;
+    setStyle(st);
+    setReview((s) => ({
+      ...s,
+      titles: sp.titles || s.titles,
+      watermark: sp.watermark || s.watermark,
+      look: { style: st },
+    }));
+    rebuild(loaded, st, canvas);
+  };
+
   const onFiles = async (fileList) => {
     const files = Array.from(fileList || []);
     const loaded = [];
     for (const file of files) {
       loaded.push(JSON.parse(await file.text()));
     }
-    setPacks(loaded);
-    setEntryIndex(0);
-    const first = loaded[0] || {};
-    const sp = first.style_pack || {};
-    setReview((s) => ({
-      ...s,
-      titles: sp.titles || s.titles,
-      watermark: sp.watermark || s.watermark,
-      look: { style: sp.style || style },
-    }));
-    rebuild(loaded, sp.style || style, canvas);
+    loadPacks(loaded, style);
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('./pack.json');
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (cancelled || !data) return;
+        loadPacks([data], (data.style_pack || {}).style);
+      } catch {
+        /* pack.json optionnel — drop manuel */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const patchStyle = (partial) => {
     const next = { ...styleParams, ...partial };
@@ -238,12 +260,26 @@ export default function App() {
           ))}
           <button
             type="button"
-            onClick={() => {
-              const blob = new Blob([JSON.stringify({ style_pack: { ...review, look: { style } } }, null, 2)], { type: 'application/json' });
+            onClick={async () => {
+              const payload = { style_pack: { ...review, look: { style } } };
+              const text = JSON.stringify(payload, null, 2);
+              const blob = new Blob([text], { type: 'application/json' });
               const a = document.createElement('a');
               a.href = URL.createObjectURL(blob);
               a.download = 'sanguinala_review.json';
               a.click();
+              try {
+                const res = await fetch('/api/save-review', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: text,
+                });
+                const body = await res.json().catch(() => ({}));
+                if (!res.ok || !body.ok) setError('W1: save review echoue — JSON non ecrit');
+                else setError(null);
+              } catch {
+                setError('W1: save review indisponible — JSON telecharge seulement');
+              }
             }}
           >
             Export JSON review unique

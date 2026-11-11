@@ -13,4 +13,11 @@ Portees depuis salvage dev8 **par copie de handlers** (CDC §7.4) :
 - T1 titres `style_pack.titles`
 - Export JSON review unique (`sanguinala_review.json`) applique a N clips
 
-IN : pack PUR json. OUT : JSON review. Pack jamais edite.
+IN : pack PUR json (`public/pack.json` stage par `run_all --preview-stage`). OUT : `REVIEW/sanguinala_review.json` (ancien codex). Pack jamais edite.
+
+```bash
+python3 run_all.py --pack <pack.json> --work WORK --out OUT --preview-stage
+cd F03_PREVIEW/CODEBASE && npm ci && npm run dev
+```
+
+Port 5174. Operateur : titres T1, double-clic logo W1, Export JSON review. Puis relancer run_all sans `--preview-stage`.

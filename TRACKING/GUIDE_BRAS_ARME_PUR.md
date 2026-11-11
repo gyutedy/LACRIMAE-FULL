@@ -1,8 +1,9 @@
 # Guide Operateur — Bras arme (SANGUINALA + archive PUR)
 
 > SANGUINALA V1 (2026-11-10) : nouvel arbre. Heisenberg hors flux.
-> Arbre Phase 1 : `BRIDGE/` `F00_SOURCE/` `F01_LOOK/` `F03_PREVIEW/` (LOOK) `F05/` `F06_LUTHER/` `F07_CAPTION/` (housing Phase 2).
-> Pipeline cible : BRIDGE → F00_SOURCE → F01_LOOK → F02_MONTAGE (Phase 2) → F03_POSTPROD → F05 → F06.
+> Arbre : `BRIDGE/` `F00_SOURCE/` `F03_PREVIEW/` (LOOK + W1/T1, AVANT moteur) `F01_LOOK/` `F02_MONTAGE/` `F03_POSTPROD/` (caption F07 + glow + lut) `F05/` `F06_LUTHER/`.
+> Pipeline : pack → F03_PREVIEW (JSON review) → F00 → F01 → F02 → F03 CAPTION/GLOW/LUT/FADE → F05 → F06.
+> Operateur = toi. Tu valides F03_PREVIEW puis F07 PREVIEW puis glow, tu n'edites ni code ni pack.
 > Styles V1 : `blur` | `reframing` seulement (`split_scene` = V2+).
 > Cahier : `TRACKING/SANGUINALA_CDC_V3.html`. Plan : `TRACKING/SANGUINALA_IMPLEMENTATION_PLAN.md`.
 

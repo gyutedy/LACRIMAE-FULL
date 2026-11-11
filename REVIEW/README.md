@@ -14,3 +14,5 @@ Mecanismes portes depuis salvage **par copie** (CDC §7.4), pas de reecriture :
 | Export JSON review unique | bouton `sanguinala_review.json` | idem |
 
 Src complete non fusionnee (hybrid/reveal/ranking) : `TRACKING/SALVAGE/review_dev8/` — ne pas la coller par-dessus le LOOK.
+
+`run_all.py` lit `REVIEW/sanguinala_review.json` AVANT le moteur (W1/T1). Fichier jamais commite (gitignore). `--require-previews` = FAIL si absent.

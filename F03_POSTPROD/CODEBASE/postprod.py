@@ -38,7 +38,11 @@ def apply_one(inp: Path, out: Path, style_pack: dict, work: Path) -> int:
         if not schema.exists():
             print("G4 FAIL: caption_schema absent:", schema)
             return 2
-        print("G4: CAPTION present (F07 housing). Application Whisper/Blender = runtime pack.")
+        s1 = caption.get("s1")
+        if isinstance(s1, dict) and s1.get("id"):
+            print("G4: CAPTION s1 valide (F07 PREVIEW). Whisper/Blender overlay = runtime pack. id=", s1.get("id"), "size=", s1.get("size"))
+        else:
+            print("G4: CAPTION present (F07 housing). Application Whisper/Blender = runtime pack.")
 
     if glow.get("enabled"):
         sys.path.insert(0, str(HERE / "glow"))

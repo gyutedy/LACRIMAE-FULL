@@ -1,21 +1,59 @@
 # Guide d'utilisation — LACRIMAE SANGUINALA V1
 
 Branche `sanguinala-v1`. Pack PUR in, N MP4 out. Heisenberg hors flux.
+Operateur = toi. Tu valides les 3 previews sur le clip de reference AVANT le rendu N MP4.
+Tu ne touches ni au code ni au pack.
 
-## SANGUINALA — run_all
+## Ordre operateur (CDC §8)
+
+1. Pack PUR (PERTURABO ou fixture).
+2. **F03_PREVIEW** (AVANT le moteur) : look + titres T1 + watermark W1. Export `REVIEW/sanguinala_review.json` (l'ancien codex).
+3. **F07 CAPTION PREVIEW** : police / taille / place s1. Save `F03_POSTPROD/CODEBASE/caption/OUT/style.json`.
+4. **Preview GLOW** : 1 frame PNG (sigma / opacite). Deja dans run_all (GL2).
+5. Relancer `run_all` : N MP4.
+
+## Stage des 2 previews (clip de reference seulement)
 
 ```bash
-python3 run_all.py --pack TRACKING/fixtures/sanguinala_p5_pack.json --work WORK --out OUT
+python3 run_all.py --pack TRACKING/fixtures/sanguinala_p6_pack.json --work WORK/p6 --out OUT/p6 --preview-stage
 ```
 
-Portes : G0 PACK, G0-S (blur|reframing), G1 sample/VOD, G2 duree, G3 LOOK 9:16, M1 montage, G4 caption, GL1 glow, L1/F1 lut+fade, G-PACK, G6 F05/F06.
+Puis dans deux terminaux :
 
-Fixture Phase 5 = 2 assets locaux 9:16, **sans VOD payante**.
+```bash
+cd F03_PREVIEW/CODEBASE
+npm ci
+npm run dev
+```
 
-Phase 6 (vraie VOD) :
+```bash
+cd F03_POSTPROD/CODEBASE/caption/PREVIEW/CODEBASE
+npm ci
+npm run dev
+```
+
+F03_PREVIEW = port 5174. F07 caption = port 5173.
+Valider : bouton Export JSON review (W1/T1) + Save s1 (G4).
+Puis relancer **sans** `--preview-stage`.
+
+## Rendu N MP4 (apres validation)
 
 ```bash
 python3 run_all.py --pack TRACKING/fixtures/sanguinala_p6_pack.json --work WORK/p6 --out OUT/p6
+```
+
+Portes strictes (JSON absents = stop) :
+
+```bash
+python3 run_all.py --pack TRACKING/fixtures/sanguinala_p6_pack.json --work WORK/p6 --out OUT/p6 --require-previews
+```
+
+Portes : G0 PACK, G0-S (blur|reframing), W1/T1 review, G1 sample/VOD, G2 duree, G3 LOOK 9:16, M1 montage, G4 caption, GL1 glow, L1/F1 lut+fade, G-PACK, G6 F05/F06.
+
+Fixture Phase 5 = 2 assets locaux 9:16, **sans VOD payante**.
+
+```bash
+python3 run_all.py --pack TRACKING/fixtures/sanguinala_p5_pack.json --work WORK --out OUT
 ```
 
 ```bash

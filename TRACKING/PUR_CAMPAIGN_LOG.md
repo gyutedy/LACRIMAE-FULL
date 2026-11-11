@@ -14,4 +14,6 @@ present, Heisenberg advisory.
 | 2026-11-10 | `sanguinala-v1` | premier E2E multi-videos VOD twitch.tv/videos/2923715533 | OK | 2 assets 8s, LOOK blur 9:16, glow scene, fade black. OUT/p6/A01.mp4 + A02.mp4. LUT off. 0 jump cut 0 zoom. |
 | 2026-11-10 | `sanguinala-v1` | premiere publication operateur | OK | MID YouTube Shorts https://youtube.com/shorts/M9P1qCwsgR0. A01/A02 non publies. Whop non soumis. |
 
-Prochaine ligne : soumission Whop et/ou A01 A02 si l'operateur publie.
+| 2026-11-10 | `sanguinala-v1` | branchement F03_PREVIEW + F07 CAPTION PREVIEW | CODE | run_all --preview-stage. JSON review + s1 consommes. Whisper/Blender overlay reste runtime. |
+
+Prochaine ligne : test pack --preview-stage puis N MP4. Whop encore ouvert.

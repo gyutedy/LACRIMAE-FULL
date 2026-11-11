@@ -5,11 +5,11 @@
 ```text
 pack PUR
   → BRIDGE G0
+  → F03_PREVIEW W1 / T1   (AVANT moteur, JSON review = ancien codex)
   → F00_SOURCE G1/G2
   → F01_LOOK G3 (blur|reframing)
   → F02_MONTAGE M1 (0 jump cut)
-  → F03_POSTPROD G4 CAPTION / GL1-GL2 GLOW / L1 LUT / F1 FADE
-  → REVIEW W1 / T1
+  → F03_POSTPROD G4 CAPTION (F07 PREVIEW s1) / GL1-GL2 GLOW / L1 LUT / F1 FADE
   → F05 / F06 G6
 ```
 
@@ -21,11 +21,11 @@ pack PUR
 | **G2 DUREE** | Download | end − start ± 0,5 s |
 | **G3 LOOK** | F01 | MP4 9:16, 0 zoom anime |
 | **M1 MONTAGE** | F02 | b-roll aux temps du pack, flash [0,04 ; 0,5] s, SFX debut, 0 jump cut |
-| **G4 CAPTION** | POST-PROD | overlay mot-a-mot, preview validee |
+| **G4 CAPTION** | POST-PROD | F07 PREVIEW s1 (`caption/OUT/style.json`) ; overlay Whisper/Blender = runtime |
 | **GL1 / GL2** | POST-PROD | sigma 4–30, opacite <= 0,6 ; preview frame avant batch |
 | **L1 / F1** | POST-PROD | .cube existe si LUT ; fade/darken vers la fin |
-| **W1 REVIEW** | Review | clic, double-clic, images pack |
-| **T1 TITRES** | Review → rendu | titres pack sur N clips |
+| **W1 REVIEW** | F03_PREVIEW AVANT moteur | clic, double-clic, images pack → `REVIEW/sanguinala_review.json` |
+| **T1 TITRES** | F03_PREVIEW → rendu | titres pack affiches, appliques a N clips |
 | **G-PACK** | POST-PROD | meme style_pack sur N clips |
 | **G6 LIVRABLE** | F05/F06 | H.264 yuv420p faststart, N MP4 = N assets |
 

@@ -79,6 +79,12 @@ F00_PUR/OUT/*
 !F00_PUR/OUT/.gitkeep
 F03_PREVIEW/CODEBASE/public/clips/
 F03_PREVIEW/CODEBASE/public/pur_manifest.json
+F03_PREVIEW/CODEBASE/public/pack.json
+REVIEW/sanguinala_review.json
+F03_POSTPROD/CODEBASE/caption/OUT/style.json
+F03_POSTPROD/CODEBASE/caption/PREVIEW/CODEBASE/public/target.mp4
+F03_POSTPROD/CODEBASE/caption/PREVIEW/CODEBASE/public/style.json
+F03_POSTPROD/CODEBASE/caption/PREVIEW/CODEBASE/public/transcript.json
 F03_PICTOR/OUT/*
 !F03_PICTOR/OUT/.gitkeep
 F03_PICTOR/CODEBASE/public/clips/

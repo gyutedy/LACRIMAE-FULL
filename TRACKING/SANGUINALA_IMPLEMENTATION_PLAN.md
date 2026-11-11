@@ -425,6 +425,7 @@ Commit docs only : `sanguinala-v1 P7: first published campaign log`
 - [x] Phase 5 run_all + portes fixture
 - [x] Phase 6 E2E vraie VOD N MP4
 - [x] Phase 7 log publication (operateur) — MID YouTube Shorts, Whop ouvert
+- [x] Branchement F03_PREVIEW (W1/T1, JSON review AVANT moteur) + F07 CAPTION PREVIEW (s1) dans run_all
 
 ## Ce que VANUS n'est pas
 

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """run_all.py — orchestrateur SANGUINALA V1 (CDC §7 / §7.7).
 
-BRIDGE → F00_SOURCE → F01_LOOK → F02_MONTAGE → F03_POSTPROD → F05 → F06.
+F03_PREVIEW (W1/T1, JSON review) AVANT le moteur.
+Puis BRIDGE → F00_SOURCE → F01_LOOK → F02_MONTAGE → F03_POSTPROD
+(CAPTION F07 preview s1 → GLOW → LUT → FADE) → F05 → F06.
 S'arrete a la premiere porte en echec. Heisenberg n'est jamais appele.
 Boucle assets[] : meme style_pack, montage_instructions propre a chaque clip.
 """
@@ -25,6 +27,10 @@ F03_PY = ROOT / "F03_POSTPROD" / "CODEBASE" / "postprod.py"
 F05_PY = ROOT / "F05" / "CODEBASE" / "lac_f05_camouflage.py"
 F06_PY = ROOT / "F06_LUTHER" / "CODEBASE" / "lac_f06_luther.py"
 CAPTION_SCHEMA = ROOT / "F03_POSTPROD" / "CODEBASE" / "caption" / "TRAVAIL" / "CODEBASE" / "caption_schema.py"
+CAPTION_STYLE = ROOT / "F03_POSTPROD" / "CODEBASE" / "caption" / "OUT" / "style.json"
+CAPTION_PREVIEW = ROOT / "F03_POSTPROD" / "CODEBASE" / "caption" / "PREVIEW" / "CODEBASE"
+F03_PREVIEW = ROOT / "F03_PREVIEW" / "CODEBASE"
+REVIEW_JSON = ROOT / "REVIEW" / "sanguinala_review.json"
 
 
 def log(msg: str) -> None:
@@ -217,7 +223,7 @@ def gate_g3(path: Path) -> int:
     return 0
 
 
-def gate_g4(style_pack: dict) -> int:
+def gate_g4(style_pack: dict, require_preview: bool) -> int:
     caption = style_pack.get("caption") or {}
     if not caption.get("enabled"):
         log("G4 CAPTION: disabled")
@@ -225,8 +231,97 @@ def gate_g4(style_pack: dict) -> int:
     if not CAPTION_SCHEMA.is_file():
         log("G4 CAPTION FAIL: caption_schema absent")
         return 2
-    log("G4 CAPTION OK: F07 housing present")
+    preview_app = CAPTION_PREVIEW / "src" / "App.jsx"
+    if not preview_app.is_file():
+        log("G4 CAPTION FAIL: F07 PREVIEW App.jsx absent")
+        return 2
+    if CAPTION_STYLE.is_file():
+        log(f"G4 CAPTION OK: F07 PREVIEW branchee, s1={CAPTION_STYLE}")
+        return 0
+    if require_preview:
+        log("G4 CAPTION FAIL: F07 PREVIEW non validee (caption/OUT/style.json absent)")
+        return 2
+    log("G4 CAPTION: F07 housing + PREVIEW presente, style.json absent (degrade, Whisper/Blender runtime)")
     return 0
+
+
+def gate_w1_t1(style_pack: dict, review_path: Path, require_preview: bool) -> int:
+    if review_path.is_file():
+        log(f"W1 REVIEW OK: {review_path}")
+        titles = (style_pack.get("titles") or [])
+        if titles:
+            log(f"T1 TITRES OK: {len(titles)} titre(s) depuis review")
+        else:
+            log("T1 TITRES: aucun titre dans review/pack")
+        return 0
+    if require_preview:
+        log("W1 REVIEW FAIL: F03_PREVIEW non validee (REVIEW/sanguinala_review.json absent)")
+        return 2
+    log("W1 REVIEW: JSON absent — titres/watermark pack bruts (preview non validee)")
+    if style_pack.get("titles"):
+        log(f"T1 TITRES: {len(style_pack['titles'])} titre(s) pack, pas encore valides en review")
+    return 0
+
+
+def load_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def merge_review(style_pack: dict, review_path: Path) -> dict:
+    if not review_path.is_file():
+        return style_pack
+    raw = load_json(review_path)
+    incoming = raw.get("style_pack") if isinstance(raw.get("style_pack"), dict) else raw
+    merged = dict(style_pack)
+    for key in ("titles", "watermark", "look"):
+        if key in incoming and incoming[key] not in (None, [], {}):
+            merged[key] = incoming[key]
+    look = incoming.get("look") if isinstance(incoming.get("look"), dict) else {}
+    if look.get("style"):
+        merged["style"] = look["style"]
+    log("W1/T1: style_pack fusionne depuis JSON review")
+    return merged
+
+
+def merge_caption_style(style_pack: dict) -> dict:
+    if not CAPTION_STYLE.is_file():
+        return style_pack
+    s1 = load_json(CAPTION_STYLE)
+    merged = dict(style_pack)
+    cap = dict(merged.get("caption") or {})
+    cap["enabled"] = True
+    cap["style"] = s1.get("id") or cap.get("style") or "s1"
+    cap["s1"] = s1
+    merged["caption"] = cap
+    log("G4: caption.s1 fusionne depuis F07 OUT/style.json")
+    return merged
+
+
+def stage_f03_preview(pack_path: Path, look_mp4: Path | None) -> None:
+    public = F03_PREVIEW / "public"
+    public.mkdir(parents=True, exist_ok=True)
+    dest_pack = public / "pack.json"
+    dest_pack.write_bytes(pack_path.read_bytes())
+    log(f"F03_PREVIEW stage: {dest_pack}")
+    if look_mp4 and look_mp4.is_file():
+        clips = public / "clips"
+        clips.mkdir(parents=True, exist_ok=True)
+        dest = clips / look_mp4.name
+        dest.write_bytes(look_mp4.read_bytes())
+        log(f"F03_PREVIEW stage clip: {dest}")
+
+
+def stage_f07_preview(look_mp4: Path | None) -> None:
+    public = CAPTION_PREVIEW / "public"
+    public.mkdir(parents=True, exist_ok=True)
+    if look_mp4 and look_mp4.is_file():
+        dest = public / "target.mp4"
+        dest.write_bytes(look_mp4.read_bytes())
+        log(f"F07 PREVIEW stage clip: {dest}")
+    if CAPTION_STYLE.is_file():
+        dest_s = public / "style.json"
+        dest_s.write_bytes(CAPTION_STYLE.read_bytes())
+        log(f"F07 PREVIEW stage s1: {dest_s}")
 
 
 def gate_gl1(style_pack: dict) -> int:
@@ -258,6 +353,9 @@ def main() -> int:
     ap.add_argument("--out", type=Path, default=ROOT / "OUT")
     ap.add_argument("--style", default=None, choices=sorted(ALLOWED_STYLES))
     ap.add_argument("--look-dir", type=Path, default=None)
+    ap.add_argument("--review", type=Path, default=REVIEW_JSON)
+    ap.add_argument("--preview-stage", action="store_true", help="clip de reference + stage F03_PREVIEW et F07 PREVIEW, stop")
+    ap.add_argument("--require-previews", action="store_true", help="W1/G4 FAIL si JSON review / style.json absents")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -275,13 +373,18 @@ def main() -> int:
 
     items = assets_of(pack)
     style_pack = pack.get("style_pack") or {}
-    log(f"PIPELINE: BRIDGE → F00_SOURCE → F01_LOOK → F02_MONTAGE → F03_POSTPROD → F05 → F06  ({len(items)} clips)")
-    log("G-PACK: meme style_pack pour tous les assets")
+    style_pack = merge_review(style_pack, args.review)
+    style_pack = merge_caption_style(style_pack)
+    log("PIPELINE: F03_PREVIEW (W1/T1) → F00_SOURCE → F01_LOOK → F02_MONTAGE → F03_POSTPROD (F07 CAPTION → GLOW → LUT → FADE) → F05 → F06")
+    log(f"G-PACK: meme style_pack pour tous les assets ({len(items)} clips)")
     if args.dry_run:
         log("DRY-RUN: portes G0/G0-S OK, stop avant execution.")
         return 0
 
-    code = gate_g4(style_pack)
+    code = gate_w1_t1(style_pack, args.review, args.require_previews and not args.preview_stage)
+    if code:
+        return code
+    code = gate_g4(style_pack, args.require_previews and not args.preview_stage)
     if code:
         return code
     code = gate_gl1(style_pack)
@@ -292,8 +395,10 @@ def main() -> int:
     args.out.mkdir(parents=True, exist_ok=True)
     style_pack_path = args.work / "style_pack.json"
     style_pack_path.write_text(json.dumps(style_pack, indent=2), encoding="utf-8")
+    stage_f03_preview(args.pack, None)
 
     delivered = 0
+    ref_id = pack.get("reference_asset") or (items[0].get("id") if items else None)
     for asset in items:
         aid = asset.get("id") or "clip"
         log(f"=== asset {aid} ===")
@@ -335,7 +440,20 @@ def main() -> int:
         if code:
             return code
 
-        if aid == pack.get("reference_asset") and (style_pack.get("glow") or {}).get("enabled"):
+        if aid == ref_id:
+            stage_f03_preview(args.pack, look_mp4)
+            stage_f07_preview(look_mp4)
+            if args.preview_stage:
+                log("PREVIEW STAGE OK: F03_PREVIEW public/pack.json + clip")
+                log("PREVIEW STAGE OK: F07 PREVIEW public/target.mp4")
+                log("Operateur: cd F03_PREVIEW/CODEBASE && npm ci && npm run dev   (port 5174)")
+                log("Operateur: cd F03_POSTPROD/CODEBASE/caption/PREVIEW/CODEBASE && npm ci && npm run dev   (port 5173)")
+                log("Valider: Export JSON review -> REVIEW/sanguinala_review.json")
+                log("Valider: Save s1 -> F03_POSTPROD/CODEBASE/caption/OUT/style.json")
+                log("Puis relancer run_all SANS --preview-stage")
+                return 0
+
+        if aid == ref_id and (style_pack.get("glow") or {}).get("enabled"):
             preview_png = args.work / f"{aid}_glow_preview.png"
             glow = style_pack["glow"]
             prev = [

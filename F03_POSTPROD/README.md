@@ -12,3 +12,12 @@ Ordre : CAPTION → GLOW → LUT → FADE.
 | lut/profiles/ | `atom_ic_profiles.json` depuis dev6 | L1 |
 
 `postprod.py` s'arrete a la premiere porte en echec.
+
+F07 PREVIEW (0 modification des fichiers F07) :
+
+```bash
+python3 run_all.py --pack <pack.json> --work WORK --out OUT --preview-stage
+cd F03_POSTPROD/CODEBASE/caption/PREVIEW/CODEBASE && npm ci && npm run dev
+```
+
+Port 5173. Operateur valide s1 (police, taille, place) → `caption/OUT/style.json`. `run_all` fusionne ce s1 dans `style_pack.caption`. Whisper/Blender overlay = runtime pack, pas recode.
