@@ -37,3 +37,4 @@
 | 2026-11-10 | 7b | branchement F03_PREVIEW + F07 PREVIEW | W1 T1 G4 | OK. run_all --preview-stage stage pack+clip. F03_PREVIEW save REVIEW/sanguinala_review.json. F07 PREVIEW save caption/OUT/style.json. F07 fichiers 0 modification. --require-previews = FAIL si JSON absents. |
 | 2026-11-11 | 7c | F03 live : titres editables + fg_scale + curseur WM | W1 T1 | OK. LOOK conserve. Handlers copies depuis salvage review_dev8. Pas de collage Omni/ranking/reveal/hybrid. F07 PREVIEW 0 modification. |
 | 2026-11-11 | 7d | rebranchement GitHub Pages | W1 G4 | OK. Erreur CDC : gh-pages hors perimetre. Hub f03/ + f07/. Archive OMNIS conservee. F07 chemins relatifs pour Pages. |
+| 2026-11-11 | 7e | F03 Player taille + parse pack SANGUINALA | W1 G4 | OK. Player 300px aspectRatio controls autoPlay. expandSanguinalaPack assets[] → clip_file. LOOK conserve. Pages f03 rebuild. |

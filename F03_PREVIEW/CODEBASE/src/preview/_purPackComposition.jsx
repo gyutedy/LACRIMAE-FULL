@@ -76,7 +76,7 @@ export function PurPackComposition({ purManifest, session: sessionProp, entryInd
     : 'blocked';
   const sp = normalizePurStyleParams(manifest.style_params, styleName || 'blur');
 
-  const videoUrl = entry.clip_file ? entry.clip_file.replace(/^\.?\//, '') : null;
+  const videoUrl = entry.clip_file ? `./${entry.clip_file.replace(/^\.?\//, '')}` : null;
   const anti = entry.anti_detection || {};
   const speed = Number(anti.speed || 1);
   const antiTransform = [antiDetectionTransform(anti), purCropTransform(anti.crop_pct)]

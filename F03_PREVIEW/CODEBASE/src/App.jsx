@@ -4,6 +4,8 @@ import { PurPackComposition } from './preview/_purPackComposition';
 import {
   parsePurPack,
   parsePurPackMulti,
+  expandSanguinalaPack,
+  clipFileCandidates,
   normalizePurOverlayParams,
   normalizePurStyleParams,
   PUR_STYLE_VALUES,
@@ -40,8 +42,28 @@ function defaultLook(style) {
   };
 }
 
+async function resolveClipFile(angleId) {
+  const candidates = clipFileCandidates(angleId);
+  for (const path of candidates) {
+    try {
+      const head = await fetch(`./${path}`, { method: 'HEAD' });
+      if (head.ok) return path;
+    } catch {
+      /* HEAD absent */
+    }
+    try {
+      const ranged = await fetch(`./${path}`, { headers: { Range: 'bytes=0-0' } });
+      if (ranged.ok || ranged.status === 206) return path;
+    } catch {
+      /* Range absent */
+    }
+  }
+  return candidates[0];
+}
+
 export default function App() {
   const [packs, setPacks] = useState([]);
+  const [clipFiles, setClipFiles] = useState([]);
   const [manifest, setManifest] = useState(null);
   const [entryIndex, setEntryIndex] = useState(0);
   const [canvas, setCanvas] = useState('9:16');
@@ -65,17 +87,20 @@ export default function App() {
   const styleParams = normalizePurStyleParams(manifest?.style_params, manifest?.style || style);
   const wmImages = review.watermark?.images || [];
 
-  const rebuild = (nextPacks, nextStyle, nextCanvas, styleParamsOverride, overlayOverride) => {
+  const rebuild = (nextPacks, nextStyle, nextCanvas, styleParamsOverride, overlayOverride, nextClipFiles) => {
     if (!nextPacks.length) {
       setManifest(null);
       return;
     }
+    const files = (nextClipFiles && nextClipFiles.length)
+      ? nextClipFiles
+      : nextPacks.map((p, i) => clipFileCandidates(p.identite?.angle_id || p.pack_id || `clip${i + 1}`)[0]);
     const parsed = nextPacks.length === 1
-      ? parsePurPack(nextPacks[0], { fps: 30, canvas: nextCanvas, clipFiles: [`clips/pur_${nextPacks[0].identite?.angle_id || 'A01'}.mp4`], style: nextStyle, styleParams: styleParamsOverride, overlayParams: overlayOverride })
+      ? parsePurPack(nextPacks[0], { fps: 30, canvas: nextCanvas, clipFiles: [files[0]], style: nextStyle, styleParams: styleParamsOverride, overlayParams: overlayOverride })
       : parsePurPackMulti(nextPacks, {
           fps: 30,
           canvas: nextCanvas,
-          clipFiles: nextPacks.map((p, i) => `clips/pur_${p.identite?.angle_id || p.pack_id || `clip${i + 1}`}.mp4`),
+          clipFiles: files,
           style: nextStyle,
           styleParams: styleParamsOverride,
           overlayParams: overlayOverride,
@@ -158,10 +183,13 @@ export default function App() {
     setWmCursor(false);
   };
 
-  const loadPacks = (loaded, nextStyle) => {
-    setPacks(loaded);
+  const loadPacks = async (loaded, nextStyle) => {
+    const expanded = loaded.flatMap((p) => expandSanguinalaPack(p));
+    const files = await Promise.all(expanded.map((p) => resolveClipFile(p.identite?.angle_id || 'A01')));
+    setPacks(expanded);
+    setClipFiles(files);
     setEntryIndex(0);
-    const first = loaded[0] || {};
+    const first = expanded[0] || {};
     const sp = first.style_pack || {};
     const st = sp.style || nextStyle || style;
     setStyle(st);
@@ -174,7 +202,7 @@ export default function App() {
         style_params: { ...(defaultLook(st).style_params), ...(sp.look?.style_params || {}), ...(sp.style_params || {}) },
       },
     }));
-    rebuild(loaded, st, canvas, sp.look?.style_params || sp.style_params);
+    rebuild(expanded, st, canvas, sp.look?.style_params || sp.style_params, undefined, files);
   };
 
   const onFiles = async (fileList) => {
@@ -183,7 +211,7 @@ export default function App() {
     for (const file of files) {
       loaded.push(JSON.parse(await file.text()));
     }
-    loadPacks(loaded, style);
+    await loadPacks(loaded, style);
   };
 
   useEffect(() => {
@@ -208,12 +236,12 @@ export default function App() {
       ...s,
       look: { style, style_params: next },
     }));
-    rebuild(packs, style, canvas, next, overlay);
+    rebuild(packs, style, canvas, next, overlay, clipFiles);
   };
 
   const patchOverlay = (partial) => {
     const next = { ...overlay, ...partial };
-    rebuild(packs, style, canvas, styleParams, next);
+    rebuild(packs, style, canvas, styleParams, next, clipFiles);
   };
 
   const patchTitle = (i, partial) => {
@@ -295,7 +323,7 @@ export default function App() {
         {manifest ? (
           <div
             ref={stageRef}
-            style={{ position: 'relative', cursor: wmCursor ? 'grabbing' : 'crosshair' }}
+            style={{ position: 'relative', width: '100%', maxWidth: 300, cursor: wmCursor ? 'grabbing' : 'crosshair' }}
             title="Double-cliquez pour poser le logo. Glissez le watermark."
             onClick={handleLogoClick}
           >
@@ -306,8 +334,17 @@ export default function App() {
               fps={30}
               compositionWidth={size.width}
               compositionHeight={size.height}
-              style={{ maxHeight: '90vh', width: 'auto' }}
+              style={{
+                width: '100%',
+                maxWidth: 300,
+                aspectRatio: `${size.width} / ${size.height}`,
+                borderRadius: 12,
+                overflow: 'hidden',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+              }}
               controls
+              autoPlay
+              loop
             />
             {(review.titles || []).map((t, i) => (
               <div
@@ -418,14 +455,14 @@ export default function App() {
         {saveMsg && <p style={{ color: '#00ff88', fontSize: 12 }}>{saveMsg}</p>}
 
         <label style={field}>Canvas</label>
-        <select style={input} value={canvas} onChange={(e) => { setCanvas(e.target.value); rebuild(packs, style, e.target.value, styleParams, overlay); }}>
+        <select style={input} value={canvas} onChange={(e) => { setCanvas(e.target.value); rebuild(packs, style, e.target.value, styleParams, overlay, clipFiles); }}>
           <option value="9:16">9:16</option>
           <option value="16:9">16:9</option>
           <option value="1:1">1:1</option>
         </select>
 
         <label style={field}>Style</label>
-        <select style={input} value={style} onChange={(e) => { setStyle(e.target.value); setReview((s) => ({ ...s, look: { ...s.look, style: e.target.value } })); rebuild(packs, e.target.value, canvas, undefined, overlay); }}>
+        <select style={input} value={style} onChange={(e) => { setStyle(e.target.value); setReview((s) => ({ ...s, look: { ...s.look, style: e.target.value } })); rebuild(packs, e.target.value, canvas, undefined, overlay, clipFiles); }}>
           {PUR_STYLE_VALUES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
 

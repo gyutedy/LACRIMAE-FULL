@@ -197,6 +197,54 @@ function createEmptyPurManifest(fps) {
   };
 }
 
+export function isSanguinalaPack(pack) {
+  return !!(pack && typeof pack === 'object' && Array.isArray(pack.assets) && pack.assets.length > 0 && !pack.identite);
+}
+
+export function expandSanguinalaPack(pack) {
+  if (!isSanguinalaPack(pack)) return pack ? [pack] : [];
+  const source = pack.source || {};
+  const canvas = pack.canvas || '9:16';
+  const stylePack = pack.style_pack || {};
+  const styleName = stylePack.style || 'blur';
+  return pack.assets.map((asset) => {
+    const mi = asset.montage_instructions || {};
+    const start = Number(mi.start_sec ?? 0);
+    const end = Number(mi.end_sec ?? (start + 8));
+    const duration = Math.max(0.5, end - start);
+    return {
+      pack_id: pack.pack_id || 'sanguinala',
+      identite: { angle_id: asset.id || 'A01' },
+      source: {
+        vod_url: source.vod_url,
+        start_sec: start,
+        end_sec: end,
+        duration_sec: duration,
+      },
+      montage_instructions: {
+        segment: {
+          source_url: source.vod_url,
+          vod_url: source.vod_url,
+          start_sec: start,
+          end_sec: end,
+          duration_sec: duration,
+        },
+        body: { duration_sec: duration, broll: mi.broll || [] },
+        metadata: { style: styleName },
+      },
+      montage_style: styleName,
+      copywriting: {},
+      style_pack: stylePack,
+      canvas,
+    };
+  });
+}
+
+export function clipFileCandidates(angleId) {
+  const id = angleId || 'A01';
+  return [`clips/pur_${id}.mp4`, `clips/${id}_look.mp4`, `clips/${id}.mp4`];
+}
+
 export function parsePurPack(pack, options = {}) {
   const fps = options.fps || 30;
   const clipFiles = options.clipFiles || [];
