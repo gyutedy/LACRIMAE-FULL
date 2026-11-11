@@ -4,7 +4,7 @@
 > Derniere mise a jour : 2026-11-10.
 > Branche active : `sanguinala-v1` depuis `dev10-v2`.
 > Depot public : `https://github.com/gyutedy/LACRIMAE-FULL`
-> Statut : Phase 7 PARTIEL (MID YouTube Shorts M9P1qCwsgR0). F03_PREVIEW + F07 CAPTION PREVIEW branches dans run_all. Prochain test = pack + --preview-stage puis N MP4.
+> Statut : Phase 7 PARTIEL (MID YouTube Shorts M9P1qCwsgR0). F03_PREVIEW live = LOOK + titres editables + fg_scale + curseur watermark. F07 intacte. GitHub Pages rebranche (erreur CDC : l'exclure). Hub f03/ + f07/ + archive OMNIS. Prochain test = pack + --preview-stage, valider JSON review + s1, puis N MP4.
 
 ## SANGUINALA — lire dans cet ordre
 

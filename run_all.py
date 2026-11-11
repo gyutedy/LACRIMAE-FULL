@@ -279,6 +279,9 @@ def merge_review(style_pack: dict, review_path: Path) -> dict:
     look = incoming.get("look") if isinstance(incoming.get("look"), dict) else {}
     if look.get("style"):
         merged["style"] = look["style"]
+    if isinstance(look.get("style_params"), dict):
+        merged["style_params"] = look["style_params"]
+        merged["look"] = look
     log("W1/T1: style_pack fusionne depuis JSON review")
     return merged
 

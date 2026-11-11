@@ -46,7 +46,7 @@ function saveStylePlugin() {
 
 export default defineConfig({
   plugins: [react(), saveStylePlugin()],
-  base: '/',
+  base: './',
   server: {
     host: '0.0.0.0',
     port: 5173,

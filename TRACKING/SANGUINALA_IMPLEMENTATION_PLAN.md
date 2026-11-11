@@ -29,7 +29,8 @@
 | `dev10` | Review clic / double-clic / titres + overlay_title | source secondaire §7.4 |
 | `dev10-v1` | Idem dev10 (palimpseste) | source secondaire §7.4 |
 | `dev11-F07` / `dev10-v2` PREVIEW | LOOK PUR 9:16 blur/reframing, 0 zoom — garder le moteur LOOK | ne pas ecraser le LOOK par la review legacy |
-| `dev`, `dev2`..`dev5`, `dev6-B`..`F`, `dev-11`, `archive/*`, `gh-pages`, `main` | Hors perimetre V1 | ne pas piller |
+| `gh-pages` | Surface operateur permanente des 2 previews (F03 + F07). Erreur V3 : l'exclure. | brancher, ne pas ecraser l'archive OMNIS |
+| `dev`, `dev2`..`dev5`, `dev6-B`..`F`, `dev-11`, `archive/*`, `main` | Hors perimetre V1 | ne pas piller |
 
 ### Consolidation review W1 (CDC §7.4) — resultat du grep
 

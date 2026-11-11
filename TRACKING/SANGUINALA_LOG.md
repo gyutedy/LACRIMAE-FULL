@@ -35,3 +35,5 @@
 | 2026-11-10 | 6 | premier E2E multi-videos | G-PACK G6 | OK. OUT/p6/A01.mp4 + A02.mp4. LUT off (pas de .cube). Caption housing only. Heisenberg jamais appele. 0 jump cut 0 zoom. |
 | 2026-11-10 | 7 | publication operateur MID | — | OK. YouTube Shorts https://youtube.com/shorts/M9P1qCwsgR0 — clip MID seulement (01:13:20–01:13:28). A01/A02 non publies. Whop non soumis. |
 | 2026-11-10 | 7b | branchement F03_PREVIEW + F07 PREVIEW | W1 T1 G4 | OK. run_all --preview-stage stage pack+clip. F03_PREVIEW save REVIEW/sanguinala_review.json. F07 PREVIEW save caption/OUT/style.json. F07 fichiers 0 modification. --require-previews = FAIL si JSON absents. |
+| 2026-11-11 | 7c | F03 live : titres editables + fg_scale + curseur WM | W1 T1 | OK. LOOK conserve. Handlers copies depuis salvage review_dev8. Pas de collage Omni/ranking/reveal/hybrid. F07 PREVIEW 0 modification. |
+| 2026-11-11 | 7d | rebranchement GitHub Pages | W1 G4 | OK. Erreur CDC : gh-pages hors perimetre. Hub f03/ + f07/. Archive OMNIS conservee. F07 chemins relatifs pour Pages. |

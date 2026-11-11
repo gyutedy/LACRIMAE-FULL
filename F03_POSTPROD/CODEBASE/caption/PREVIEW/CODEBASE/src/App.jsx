@@ -64,8 +64,8 @@ export default function App() {
     (async () => {
       try {
         const [trRes, stRes] = await Promise.all([
-          fetch('/transcript.json'),
-          fetch('/style.json'),
+          fetch('./transcript.json'),
+          fetch('./style.json'),
         ]);
         if (cancelled) return;
         if (trRes.ok) {
@@ -73,9 +73,9 @@ export default function App() {
           if (parsed.words.length) setTranscript(parsed);
         }
         if (stRes.ok) setStyle(normalizeStyle(await stRes.json()));
-        const probe = await fetch('/target.mp4', { method: 'HEAD' });
+        const probe = await fetch('./target.mp4', { method: 'HEAD' });
         if (!cancelled && probe.ok) {
-          setVideoUrl('/target.mp4');
+          setVideoUrl('./target.mp4');
           setVideoName('target.mp4');
         }
       } catch {

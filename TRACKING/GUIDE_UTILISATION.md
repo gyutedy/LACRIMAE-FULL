@@ -7,7 +7,7 @@ Tu ne touches ni au code ni au pack.
 ## Ordre operateur (CDC §8)
 
 1. Pack PUR (PERTURABO ou fixture).
-2. **F03_PREVIEW** (AVANT le moteur) : look + titres T1 + watermark W1. Export `REVIEW/sanguinala_review.json` (l'ancien codex).
+2. **F03_PREVIEW** (AVANT le moteur) : look blur (`fg_scale` taille video claire) + titres T1 editables + watermark W1 curseur (double-clic puis glisser). Export `REVIEW/sanguinala_review.json` (l'ancien codex).
 3. **F07 CAPTION PREVIEW** : police / taille / place s1. Save `F03_POSTPROD/CODEBASE/caption/OUT/style.json`.
 4. **Preview GLOW** : 1 frame PNG (sigma / opacite). Deja dans run_all (GL2).
 5. Relancer `run_all` : N MP4.
@@ -33,8 +33,17 @@ npm run dev
 ```
 
 F03_PREVIEW = port 5174. F07 caption = port 5173.
-Valider : bouton Export JSON review (W1/T1) + Save s1 (G4).
+Valider : titres T1 + taille video claire blur (fg_scale) + double-clic/glisser watermark, bouton Export JSON review (W1/T1) + Save s1 (G4).
 Puis relancer **sans** `--preview-stage`.
+
+Surface permanente (GitHub Pages, pas un sandbox) :
+
+- Hub : `https://gyutedy.github.io/LACRIMAE-FULL/`
+- F03 : `https://gyutedy.github.io/LACRIMAE-FULL/f03/`
+- F07 : `https://gyutedy.github.io/LACRIMAE-FULL/f07/`
+- Archive review OMNIS (sept 2026) : `https://gyutedy.github.io/LACRIMAE-FULL/archive/omnis-watch/`
+
+Sur Pages, Export JSON / exporter s1 telechargent le fichier (pas d'ecriture disque). Le save disque reste Vite sandbox (`/api/save-review`, `/api/save-style`).
 
 ## Rendu N MP4 (apres validation)
 
