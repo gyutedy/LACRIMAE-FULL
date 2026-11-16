@@ -1,0 +1,118 @@
+{
+  "schema_version": "dev10.pur.v1",
+  "mode": "pur_pack",
+  "fps": 30,
+  "style": "blur",
+  "style_source": "pack",
+  "style_unknown": false,
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "aspect": "9:16"
+  },
+  "style_params": {
+    "degree": 24,
+    "bg_scale": 118,
+    "fg_scale": 72,
+    "fg_y_pct": 62
+  },
+  "narrative": {
+    "category": "",
+    "energy_level": "high",
+    "overlay": {
+      "lines": [
+        "She lost 50,000 dollars"
+      ],
+      "font": "Montserrat ExtraBold / Bebas Neue (800-900)",
+      "fallback_font": "Arial Black, Impact",
+      "color": "#FFFFFF",
+      "accent": "#FFD700",
+      "outline": "#000000",
+      "position": "haut vers le centre",
+      "font_size": 68,
+      "style_params": {
+        "line1_color": "#FFFFFF",
+        "line2_color": "#FFD700",
+        "font_family": "Arial Black, Impact",
+        "bg_enabled": false,
+        "bg_color": "#000000",
+        "bg_opacity": 0.65,
+        "outline_color": "#000000",
+        "outline_width": 3,
+        "size": 68,
+        "x_pct": 50,
+        "y_pct": 22,
+        "static_text": true,
+        "uppercase": false,
+        "box_radius": 10,
+        "box_padding": 14,
+        "auto_fit": true,
+        "min_size": 28
+      },
+      "visible_from_frame": 90,
+      "visible": "toute la duree"
+    }
+  },
+  "entries": [
+    {
+      "source_id": "pur_e99bd523-A01",
+      "clip_file": "",
+      "duration_seconds": 30,
+      "start_frame": 0,
+      "role": "pur_clip",
+      "anti_detection": {
+        "mirror": false,
+        "speed": 1,
+        "crop_pct": 0,
+        "principle": ""
+      },
+      "zooms": [],
+      "punch_ins": [],
+      "cuts": [],
+      "broll": [],
+      "sfx_list": []
+    }
+  ],
+  "duration_seconds": 30,
+  "total_frames": 900,
+  "pur": {
+    "pack_id": "e99bd523-A01",
+    "angle_id": "",
+    "generated_at": "2026-11-16T17:18:41Z",
+    "generator": "MARK1",
+    "source": "https://twitch.tv/videos/2927914500",
+    "start_sec": 10328,
+    "end_sec": 10358,
+    "platform": "youtube_shorts",
+    "hook": {
+      "duration_sec": 3,
+      "philosophy": ""
+    },
+    "body": {
+      "duration_sec": 27,
+      "energy_curve": []
+    },
+    "outro": {
+      "duration_sec": 1,
+      "type": "fade_to_black",
+      "note": ""
+    },
+    "compliance": {
+      "language": "en",
+      "watermark": {
+        "file": "production_pack_mark1_e99bd523.png",
+        "opacity": 0.8,
+        "position": "centered",
+        "size_pct": 15,
+        "required": true,
+        "exists": true,
+        "available_pngs": [
+          "aishahsofey_1.png"
+        ],
+        "bundled": true
+      }
+    }
+  },
+  "sfx_available": true,
+  "clip_audio_available": true
+}

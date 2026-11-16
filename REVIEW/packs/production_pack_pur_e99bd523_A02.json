@@ -1,0 +1,77 @@
+{
+  "mode": "pur",
+  "pack_id": "e99bd523-A02",
+  "campaign_id": "2026-07-24_AISHAH_SOFEY_MULTI",
+  "asset_mode": "blur",
+  "generated_at": "2026-11-16T17:18:41Z",
+  "source": {
+    "vod_url": "https://twitch.tv/videos/2927914500",
+    "start_sec": 8616.6,
+    "end_sec": 8646.6,
+    "duration_sec": 30.0,
+    "source_permission": "campaign_provided"
+  },
+  "montage_instructions": {
+    "metadata": {
+      "generated_at": "2026-11-16T17:18:41Z",
+      "generator": "MARK1",
+      "version": "3.0.0-mark1-adapted",
+      "mode": "mark1_adapted",
+      "campaign_id": "2026-07-24_AISHAH_SOFEY_MULTI",
+      "angle_id": "A02",
+      "segment_id": "A02",
+      "style": "blur"
+    },
+    "segment": {
+      "source_url": "https://twitch.tv/videos/2927914500",
+      "start_sec": 8616.6,
+      "end_sec": 8646.6,
+      "duration_sec": 30.0,
+      "signal_type": "mixed"
+    },
+    "style": {
+      "style": "blur"
+    }
+  },
+  "copywriting": {
+    "overlay_title": "She lost 86,000 seconds",
+    "overlay_lines": 2,
+    "metadata_title": "Aishah Sofey Yo, being timed out for 86,000 seconds is",
+    "description": "Yo, being timed out for 86,000 seconds is. #aishahsofey @aishah",
+    "tags": [
+      "yo",
+      "being",
+      "out",
+      "seconds",
+      "timed",
+      "did",
+      "insane",
+      "miss"
+    ],
+    "hashtags": [
+      "#aishahsofey",
+      "#yo"
+    ]
+  },
+  "review": {
+    "overlay_title": "She lost 86,000 seconds",
+    "metadata_title": "Aishah Sofey Yo, being timed out for 86,000 seconds is",
+    "caption": "She lost 86,000 seconds @aishah #aishahsofey #ad",
+    "clip_token": "A02-20261116-e99bd523"
+  },
+  "compliance": {
+    "language": "en",
+    "watermark": {
+      "file": "production_pack_mark1_e99bd523.png",
+      "opacity": 0.8,
+      "position": "centered",
+      "size_pct": 15,
+      "required": true,
+      "exists": true,
+      "available_pngs": [
+        "aishahsofey_1.png"
+      ],
+      "bundled": true
+    }
+  }
+}
