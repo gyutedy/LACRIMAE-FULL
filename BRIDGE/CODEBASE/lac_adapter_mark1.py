@@ -1,29 +1,30 @@
 #!/usr/bin/env python3
-"""lac_adapter_mark1.py -- adaptateur MARK1 -> pack PUR (LACRIMAE).
+"""lac_adapter_mark1.py -- adaptateur MARK1 -> livrable PUR (LACRIMAE).
 
-LE PROBLEME QU IL RESOUT (AUDIT_V1, constat M4)
-    MARK1 produit UN pack contenant N assets :
-        {"mode": "mark1", "assets": [{id, start_sec, end_sec, ...}, ...]}
-    LACRIMAE attend UN pack par clip, au format PUR :
-        {"mode": "pur", "source": {vod_url, start_sec, end_sec}, ...}
-    Il n y a pas de chemin direct : ce script fait la conversion.
+LE CONTRAT (valide avec l'operateur)
+    Un pack MARK1 = UN livrable = N clips.
+    Le pack porte les bornes et les titres de chaque clip dans assets[].
+    LACRIMAE sait deja lire ce format : expandSanguinalaPack() dans
+    F03_PREVIEW/CODEBASE/src/preview/bridgeClipper.js lit assets[] et
+    source.vod_url.
 
-CE QU IL FAIT
-    1. lit un pack MARK1 (fichier local ou URL)
-    2. injecte la vod_url (M3 : le pack MARK1 n en porte pas)
-    3. eclate chaque asset en un pack PUR autonome
-    4. ecrit N fichiers production_pack_pur_<token>_<ID>.json
+    Il ne manque qu'UN champ : source.vod_url.
+    Ce script le pose. Une seule fois. Jamais ecrase s'il existe deja.
 
 CE QU IL NE FAIT PAS
-    Il n invente aucun contenu. Le copywriting vient du pack MARK1 ; si un
-    champ manque, il est absent du pack PUR (les portes le diront).
-    Il n appelle aucune fregate. Il ne rend aucune video.
+    - Il ne renomme PAS le pack : le nom est l'identite du livrable.
+    - Il ne decoupe PAS le pack en N fichiers : le pack reste multi-clips.
+    - Il ne liste PAS de dossier : l'operateur fournit l'URL exacte.
+    - Il n invente aucun contenu : il relit et reinjecte tel quel.
 
 USAGE
     python lac_adapter_mark1.py \\
-        --pack production_pack_mark1_e99bd523.json \\
+        --pack-url https://raw.githubusercontent.com/.../production_pack_mark1_e99bd523.json \\
         --vod-url https://twitch.tv/videos/2927914500 \\
         --out BRIDGE/OUT
+
+    --vod-url n'est necessaire QUE si le pack n a pas deja source.vod_url.
+    En local, --pack remplace --pack-url.
 """
 from __future__ import annotations
 
@@ -47,137 +48,118 @@ def load_pack(src):
     return json.loads(Path(src).read_text(encoding="utf-8"))
 
 
-def vod_id(url):
-    """Extrait l identifiant de la VOD pour nommer les fichiers."""
-    tail = str(url or "").rstrip("/").rsplit("/", 1)[-1]
-    return "".join(ch for ch in tail if ch.isalnum()) or "vod"
+def bound(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
-def asset_bounds(asset):
-    """Rend (start, end) quel que soit le format d entree."""
-    mi = asset.get("montage_instructions") or {}
-    seg = mi.get("segment") or {}
-    start = asset.get("start_sec", seg.get("start_sec"))
-    end = asset.get("end_sec", seg.get("end_sec"))
-    if start is None or end is None:
-        return None, None
-    return float(start), float(end)
+def check_assets(pack):
+    """Verifie que chaque asset porte des bornes exploitables.
+
+    Rend une liste d erreurs. Ne corrige rien : si le pack est casse, il faut
+    le savoir avant le rendu, pas pendant.
+    """
+    errors = []
+    assets = pack.get("assets") or []
+    if not assets:
+        return ["assets[] absent ou vide"]
+    seen = set()
+    for i, asset in enumerate(assets):
+        aid = asset.get("id") or ("#%d" % i)
+        if aid in seen:
+            errors.append("asset '%s' en double" % aid)
+        seen.add(aid)
+        mi = asset.get("montage_instructions") or {}
+        seg = (mi.get("segment") or {}) if isinstance(mi, dict) else {}
+        start = asset.get("start_sec", seg.get("start_sec"))
+        end = asset.get("end_sec", seg.get("end_sec"))
+        if not bound(start) or not bound(end):
+            errors.append("asset '%s' : bornes absentes ou non numeriques" % aid)
+            continue
+        if float(end) <= float(start):
+            errors.append("asset '%s' : end_sec <= start_sec (%.1f <= %.1f)"
+                          % (aid, float(end), float(start)))
+    return errors
 
 
-def to_pur(asset, mark_pack, vod_url, style):
-    """Convertit UN asset MARK1 en UN pack PUR."""
-    aid = asset.get("id") or "clip"
-    start, end = asset_bounds(asset)
-    if start is None:
-        raise ValueError("asset %s : bornes introuvables" % aid)
+def with_vod(pack, vod_url):
+    """Pose source.vod_url. Ne l ecrase jamais.
 
-    duration = round(end - start, 3)
-    generated = mark_pack.get("generated_at") or ""
-
-    # copywriting : on recopie ce que MARK1 a produit, rien de plus
-    copywriting = {
-        "overlay_title": asset.get("overlay_title") or "",
-        "overlay_lines": 2,
-        "metadata_title": asset.get("metadata_title") or "",
-        "description": asset.get("description") or "",
-        "tags": list(asset.get("tags") or []),
-        "hashtags": list(asset.get("hashtags") or []),
-    }
-
-    mi = {
-        "metadata": {
-            "generated_at": generated,
-            "generator": "MARK1",
-            "version": "3.0.0-mark1-adapted",
-            "mode": "mark1_adapted",
-            "campaign_id": (mark_pack.get("campaign") or {}).get("campaign_id") or "",
-            "angle_id": aid,
-            "segment_id": aid,
-            "style": style,
-        },
-        "segment": {
-            "source_url": vod_url,
-            "start_sec": start,
-            "end_sec": end,
-            "duration_sec": duration,
-            "signal_type": "mixed",
-        },
-        "style": {"style": style},
-    }
-
-    return {
-        "mode": "pur",
-        "pack_id": "%s-%s" % (mark_pack.get("pack_token") or "mark1", aid),
-        "campaign_id": (mark_pack.get("campaign") or {}).get("campaign_id") or "",
-        "asset_mode": mark_pack.get("asset_mode") or style,
-        "generated_at": generated,
-        "source": {
-            "vod_url": vod_url,
-            "start_sec": start,
-            "end_sec": end,
-            "duration_sec": duration,
-            "source_permission": "campaign_provided",
-        },
-        "montage_instructions": mi,
-        "copywriting": copywriting,
-        "review": {
-            "overlay_title": asset.get("overlay_title") or "",
-            "metadata_title": asset.get("metadata_title") or "",
-            "caption": asset.get("caption") or "",
-            "clip_token": asset.get("clip_token") or "",
-        },
-        "compliance": {
-            "language": mark_pack.get("language") or "en",
-            "watermark": mark_pack.get("watermark") or {},
-        },
-    }
+    Rend (pack_enrichi, action) ou action est 'present', 'injecte' ou
+    'unchanged'. Un seul endroit porte la VOD : source.vod_url.
+    """
+    source = dict(pack.get("source") or {})
+    existing = str(source.get("vod_url") or "").strip()
+    if existing:
+        if vod_url and vod_url.strip() != existing:
+            log("NOTE: source.vod_url deja present (%s) — l argument --vod-url "
+                "(%s) est ignore. Une seule source de verite." % (existing, vod_url.strip()))
+        action = "present"
+    elif vod_url:
+        source["vod_url"] = vod_url.strip()
+        action = "injecte"
+    else:
+        action = "unchanged"
+    out = dict(pack)
+    out["source"] = source
+    return out, action
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Adaptateur MARK1 -> PUR (LACRIMAE)")
-    ap.add_argument("--pack", required=True, help="pack MARK1 (chemin ou URL raw)")
-    ap.add_argument("--vod-url", required=True, help="URL de la VOD source")
-    ap.add_argument("--out", default=str(ROOT / "BRIDGE" / "OUT"))
-    ap.add_argument("--style", default=None, choices=["blur", "reframing"],
-                    help="force le style ; sinon asset_mode du pack MARK1")
+    ap = argparse.ArgumentParser(description="Adaptateur MARK1 -> livrable PUR (LACRIMAE)")
+    grp = ap.add_mutually_exclusive_group(required=True)
+    grp.add_argument("--pack", help="pack MARK1 local")
+    grp.add_argument("--pack-url", help="URL raw du pack MARK1")
+    ap.add_argument("--vod-url", default="", help="VOD source, si absente du pack")
+    ap.add_argument("--out", default=str(ROOT / "BRIDGE" / "OUT"),
+                    help="dossier de sortie")
+    ap.add_argument("--dry-run", action="store_true", help="analyse seule, n ecrit rien")
     args = ap.parse_args()
 
-    mark = load_pack(args.pack)
-    if mark.get("mode") != "mark1":
-        log("ADAPTER FAIL: mode=%r, attendu 'mark1'" % (mark.get("mode"),))
+    src = args.pack or args.pack_url
+    pack = load_pack(src)
+    log("PACK: %s" % pack.get("pack_id") or "(sans pack_id)")
+
+    mode = pack.get("mode")
+    if mode != "mark1":
+        log("ADAPTER FAIL: mode=%r, attendu 'mark1'" % (mode,))
         return 2
 
-    assets = mark.get("assets") or []
-    if not assets:
-        log("ADAPTER FAIL: assets[] vide")
+    errors = check_assets(pack)
+    if errors:
+        for e in errors:
+            log("ADAPTER FAIL: %s" % e)
         return 2
 
-    style = args.style or mark.get("asset_mode") or "blur"
-    if style not in ("blur", "reframing"):
-        log("ADAPTER FAIL: style=%r (blur|reframing seulement)" % (style,))
+    assets = pack.get("assets") or []
+    enriched, action = with_vod(pack, args.vod_url)
+
+    if action == "unchanged":
+        log("ADAPTER FAIL: source.vod_url absent et --vod-url non fourni.")
+        log("  Le pack ne dit pas quelle VOD telecharger. Fournir --vod-url.")
         return 2
 
+    label = {"present": "deja present", "injecte": "injecte"}[action]
+    log("VOD: %s (%s)" % (enriched["source"].get("vod_url"), label))
+
+    for asset in assets:
+        aid = asset.get("id")
+        start = float(asset.get("start_sec"))
+        end = float(asset.get("end_sec"))
+        log("CLIP %-4s %8.1fs -> %8.1fs  (%5.1fs)  %r"
+            % (aid, start, end, end - start, asset.get("overlay_title")))
+
+    if args.dry_run:
+        log("DRY-RUN: %d clip(s) valides, rien ecrit." % len(assets))
+        return 0
+
+    # Le nom du pack est son identite : on ne le change pas.
+    name = Path(src.split("?")[0]).name or "production_pack_mark1.json"
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    token = mark.get("pack_token") or "mark1"
-    vid = vod_id(args.vod_url)
+    dest = out / name
+    dest.write_text(json.dumps(enriched, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    written = []
-    for asset in assets:
-        try:
-            pur = to_pur(asset, mark, args.vod_url, style)
-        except ValueError as e:
-            log("ADAPTER FAIL: %s" % e)
-            return 2
-        name = "production_pack_pur_%s_%s.json" % (token, asset.get("id"))
-        (out / name).write_text(json.dumps(pur, ensure_ascii=False, indent=2),
-                                encoding="utf-8")
-        written.append(name)
-        log("PUR: %s (%.1fs -> %.1fs, %s)" %
-            (name, pur["source"]["start_sec"], pur["source"]["end_sec"], style))
-
-    log("ADAPTER OK: %d pack(s) PUR depuis %d asset(s), vod=%s"
-        % (len(written), len(assets), vid))
+    log("ADAPTER OK: %s (%d clip(s), 1 livrable)" % (dest, len(assets)))
     return 0
 
 

@@ -47,7 +47,7 @@ if (styleArg && !ALLOWED_STYLES.has(String(styleArg).toLowerCase())) {
 }
 
 const bridgeClipperUrl = new URL('../F03_PREVIEW/CODEBASE/src/preview/bridgeClipper.js', `file://${resolve(here)}/`);
-const { parsePurPack, parsePurPackMulti } = await import(bridgeClipperUrl.href);
+const { parsePurPack, parsePurPackMulti, expandSanguinalaPack } = await import(bridgeClipperUrl.href);
 
 let refStyleParams;
 let refOverlayParams;
@@ -64,6 +64,14 @@ if (refManifest) {
 }
 
 const loadPack = (p) => JSON.parse(readFileSync(resolve(p), 'utf-8'));
+
+// Un pack MARK1 porte N clips dans assets[] : expandSanguinalaPack() le
+// decoupe en N packs PUR mono-clip. On l applique AVANT le parse, sinon le
+// pack multi-clips serait lu comme un seul clip.
+const expand = (pack) => {
+  const out = expandSanguinalaPack(pack);
+  return Array.isArray(out) && out.length ? out : [pack];
+};
 
 const checkStyleDeclared = (pack, source) => {
   const declaredStyle = String(pack.montage_style || pack.montage_instructions?.metadata?.style || '').toLowerCase();
@@ -98,8 +106,8 @@ const refuseUnknown = (manifest) => {
 let manifest;
 if (packsList) {
   const packPaths = packsList.split(',').map((s) => s.trim()).filter(Boolean);
-  const packs = packPaths.map((p) => loadPack(p));
-  packs.forEach((pack, i) => checkStyleDeclared(pack, packPaths[i]));
+  const packs = packPaths.flatMap((p) => expand(loadPack(p)));
+  packs.forEach((pack, i) => checkStyleDeclared(pack, packPaths[0]));
   manifest = parsePurPackMulti(packs, {
     fps,
     canvas,
@@ -118,15 +126,21 @@ if (packsList) {
     console.log(`  ▸ ${e.source_id || e.angle_id || e.pack_label} → ${e.clip_file} (${e.duration_seconds}s, punch_in: ${e.zooms?.length || 0}, mirror: ${e.anti_detection?.mirror})`);
   }
 } else {
-  const pack = loadPack(packPath);
-  checkStyleDeclared(pack, packPath);
-  manifest = parsePurPack(pack, { fps, canvas, clipFiles: clip ? [clip] : [], style: styleArg, styleParams: refStyleParams, overlayParams: refOverlayParams });
+  const chunks = expand(loadPack(packPath));
+  chunks.forEach((c) => checkStyleDeclared(c, packPath));
+  manifest = chunks.length > 1
+    ? parsePurPackMulti(chunks, {
+        fps, canvas, style: styleArg,
+        clipFiles: chunks.map((c, i) => `clips/pur_${c.identite?.angle_id || `clip${i + 1}`}.mp4`),
+        styleParams: refStyleParams, overlayParams: refOverlayParams,
+      })
+    : parsePurPack(chunks[0], { fps, canvas, clipFiles: clip ? [clip] : [], style: styleArg, styleParams: refStyleParams, overlayParams: refOverlayParams });
   if (!manifest.entries.length) {
     console.error('✗ Pack PUR illisible (montage_instructions manquante ?)');
     process.exit(1);
   }
   refuseUnknown(manifest);
-  console.log(`  style: ${manifest.style} (source: ${manifest.style_source})`);
+  console.log(`  style: ${manifest.style} (source: ${manifest.style_source}) — ${manifest.entries.length} video(s)`);
 }
 
 const sfxDir = resolve('F03_PICTOR/CODEBASE/public/sfx');

@@ -206,14 +206,27 @@ export function expandSanguinalaPack(pack) {
   const source = pack.source || {};
   const canvas = pack.canvas || '9:16';
   const stylePack = pack.style_pack || {};
-  const styleName = stylePack.style || 'blur';
+  const styleName = stylePack.style || pack.asset_mode || 'blur';
   return pack.assets.map((asset) => {
     const mi = asset.montage_instructions || {};
-    const start = Number(mi.start_sec ?? 0);
-    const end = Number(mi.end_sec ?? (start + 8));
+    const seg = mi.segment || {};
+    // MARK1 ecrit les bornes A PLAT sur l asset (start_sec/end_sec).
+    // Un pack PUR les met dans montage_instructions.segment. On accepte les deux.
+    const start = Number(asset.start_sec ?? seg.start_sec ?? 0);
+    const end = Number(asset.end_sec ?? seg.end_sec ?? (start + 8));
     const duration = Math.max(0.5, end - start);
+    // Le titre vient du copywriting ASSET (MARK1) ou du pack ; sans ca
+    // l overlay du rendu est vide.
+    const copywriting = {
+      overlay_title: asset.overlay_title || '',
+      overlay_lines: asset.overlay_lines || 2,
+      metadata_title: asset.metadata_title || '',
+      description: asset.description || '',
+      tags: Array.isArray(asset.tags) ? asset.tags : [],
+      hashtags: Array.isArray(asset.hashtags) ? asset.hashtags : [],
+    };
     return {
-      pack_id: pack.pack_id || 'sanguinala',
+      pack_id: pack.pack_id || pack.pack_token || 'sanguinala',
       identite: { angle_id: asset.id || 'A01' },
       source: {
         vod_url: source.vod_url,
@@ -233,7 +246,7 @@ export function expandSanguinalaPack(pack) {
         metadata: { style: styleName },
       },
       montage_style: styleName,
-      copywriting: {},
+      copywriting,
       style_pack: stylePack,
       canvas,
     };

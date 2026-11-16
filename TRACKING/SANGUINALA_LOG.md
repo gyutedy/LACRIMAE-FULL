@@ -54,3 +54,30 @@
 
 Restent ouverts : M1 (titres haches), M2 (chemin local), L2 (npm install),
 L3 (review), L5 (fixture), L6 (python3).
+
+## 2026-11-16 — Pack multi-clips natif + URL operateur
+
+Contrat retabli : UN pack MARK1 = UN livrable = N clips. On ne renomme
+jamais le pack, on ne le decoupe pas en N fichiers.
+
+- `lac_adapter_mark1.py` reecrit : prend `--pack-url` (ou `--pack` en local),
+  valide les bornes de chaque asset, pose `source.vod_url` UNE SEULE FOIS
+  (jamais ecrase si deja present), et reecrit le pack sous SON nom d'origine.
+  Refuse si la VOD manque et n'est pas fournie.
+- `bridgeClipper.js` : `expandSanguinalaPack()` lisait les bornes dans
+  `montage_instructions.start_sec` (format PUR) alors que MARK1 les ecrit a
+  plat sur l'asset -> tous les clips faisaient 8s. Lit maintenant les deux.
+  Il propage aussi le copywriting de l'asset (overlay_title, metadata_title,
+  description, tags, hashtags) : l'overlay n'est plus vide.
+- `convert_pur_pack.mjs` : branche `expand()` sur les deux chemins (`--pack`
+  et `--packs`). Un pack a N assets produit N entrees de manifeste.
+- `dev10_pur_render.yml` : nouvel input `pack_url` (voie nominale) +
+  `vod_url`. Le listing de dossier ne reste qu'en repli sur `pack_filter`
+  explicite. Plus de run aveugle sur les autres VOD du dossier EXPORT.
+
+Verifie de bout en bout, en local, comme la CI :
+  adapter --pack-url <raw>/production_pack_mark1_e99bd523.json
+         --vod-url https://twitch.tv/videos/2927914500
+  -> 3 clips 30s (A01 10328-10358, A02 8616.6-8646.6, A03 2375.8-2405.8)
+  convert --packs ... --style blur
+  -> 3 entrees, 90s, 2700 frames, overlay ["She lost 50,000 dollars"]
