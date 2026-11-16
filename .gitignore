@@ -106,3 +106,4 @@ F06_LUTHER/OUT/*
 !**/*.example.mp4
 F03_POSTPROD/CODEBASE/glow/tests/_work/
 WORK/
+node_modules/

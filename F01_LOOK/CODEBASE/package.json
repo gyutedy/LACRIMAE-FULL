@@ -1,7 +1,7 @@
 {
   "name": "lacrimae-f03-pictor",
   "version": "2.0.0",
-  "description": "LACRIMAE F03 PICTOR — PUR LOOK render (mirror of F03_PREVIEW)",
+  "description": "LACRIMAE F03 PICTOR \u2014 PUR LOOK render (mirror of F03_PREVIEW)",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,5 +14,13 @@
     "remotion": "^4.0.0",
     "@remotion/cli": "^4.0.0",
     "@remotion/renderer": "^4.0.0"
-  }
+  },
+  "allowScripts": [
+    "@remotion/cli",
+    "@remotion/renderer",
+    "esbuild",
+    "@parcel/watcher",
+    "@remotion/compositor-linux-x64-gnu",
+    "@remotion/compositor-win32-x64-msvc"
+  ]
 }
