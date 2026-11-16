@@ -161,11 +161,52 @@ OUT/*.mp4
 |---|---|---|---|
 | M1 | titres hachés | haute | non |
 | M2 | directive_path local | moyenne | non |
-| M3 | vod_url absente | haute | non (injectée à la main) |
-| M4 | format mark1 vs pur | haute | non (adaptateur) |
-| L1 | crash « → » cp1252 | haute | contournement manuel |
+| M3 | vod_url absente | haute | **RESOLU** par l adaptateur (--vod-url) |
+| M4 | format mark1 vs pur | haute | **CORRIGE** (BRIDGE/lac_adapter_mark1.py) |
+| L1 | crash « → » cp1252 | haute | **CORRIGE** (run_all.py reconfigure UTF-8) |
 | L2 | node_modules absent | blocante | non |
 | L3 | review absent | moyenne | toléré |
-| L4 | workflow mauvais repo | blocante | non |
+| L4 | workflow mauvais repo | blocante | **CORRIGE** (gyutedy/PERTURABO, pari-forge) |
 | L5 | fixture sans MP4 | moyenne | non |
 | L6 | python3 vs python | basse | non |
+
+---
+
+## Section 4 — Correctifs appliques le 2026-11-16
+
+### L1 — CORRIGE
+`run_all.py` reconfigure `sys.stdout` et `sys.stderr` en UTF-8 avec
+`errors="replace"` a l'import. Plus besoin de `PYTHONIOENCODING`.
+Verifie : le dry-run affiche la fleche dans les logs sans variable
+d'environnement.
+
+### L4 — CORRIGE
+`.github/workflows/dev10_pur_render.yml` pointe desormais
+`gyutedy/PERTURABO` + `pari-forge-perturabo-xs4c` (defaut ET repli dans le
+script inline).
+
+### M4 / M3 — CORRIGE
+Nouveau `BRIDGE/CODEBASE/lac_adapter_mark1.py` : lit un pack MARK1, injecte
+`--vod-url`, eclate chaque asset en un pack PUR autonome.
+
+Verifie de bout en bout :
+
+    python BRIDGE/CODEBASE/lac_adapter_mark1.py         --pack ../pack_e99.json         --vod-url https://twitch.tv/videos/2927914500 --out /tmp/pur_test
+
+    -> 3 packs PUR (A01, A02, A03), style blur
+
+    python BRIDGE/CODEBASE/lac_bridge_forge.py --pur         --pack /tmp/pur_test/production_pack_pur_e99bd523_A01.json --dry-run
+
+    -> [ok] Pack PUR valide : e99bd523-A01 | segment 10328.0s -> 10358.0s
+
+La chaine MARK1 -> PUR -> bridge est bouclee.
+
+### Restent ouverts
+| # | Constat | Note |
+|---|---|---|
+| M1 | titres haches | non corrige : MARK1 ne mesure pas la grammaticalite |
+| M2 | directive_path local | non corrige : chemins absolus dans le pack |
+| L2 | node_modules absent | prerequis : `npm install` dans F01_LOOK/CODEBASE |
+| L3 | review absent | decision a prendre : exiger le review ? |
+| L5 | fixture sans MP4 | utiliser un vrai VOD ou `--look-dir` |
+| L6 | python3 vs python | coherence du README |

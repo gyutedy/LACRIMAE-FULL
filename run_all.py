@@ -15,6 +15,16 @@ import subprocess
 import sys
 from pathlib import Path
 
+# L1 (AUDIT_V1) : la console Windows est en cp1252 et ne sait pas encoder
+# les caracteres comme la fleche "->" utilisee dans les logs. Sans ceci, le
+# script crashe APRES les portes G0/G0-S vertes : on croit que le pack est
+# refuse alors que c'est l'encodage. On force l'UTF-8 avec repli tolerant.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
 ROOT = Path(__file__).resolve().parent
 ALLOWED_STYLES = {"blur", "reframing"}
 MAX_SEGMENT = 150.0

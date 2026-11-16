@@ -38,3 +38,19 @@
 | 2026-11-11 | 7c | F03 live : titres editables + fg_scale + curseur WM | W1 T1 | OK. LOOK conserve. Handlers copies depuis salvage review_dev8. Pas de collage Omni/ranking/reveal/hybrid. F07 PREVIEW 0 modification. |
 | 2026-11-11 | 7d | rebranchement GitHub Pages | W1 G4 | OK. Erreur CDC : gh-pages hors perimetre. Hub f03/ + f07/. Archive OMNIS conservee. F07 chemins relatifs pour Pages. |
 | 2026-11-11 | 7e | F03 Player taille + parse pack SANGUINALA | W1 G4 | OK. Player 300px aspectRatio controls autoPlay. expandSanguinalaPack assets[] → clip_file. LOOK conserve. Pages f03 rebuild. |
+
+## 2026-11-16 — Correctifs AUDIT_V1 (L1, L4, M3/M4)
+
+- **L1 CORRIGE** : `run_all.py` reconfigure stdout/stderr en UTF-8 avec
+  errors="replace". Le crash `UnicodeEncodeError` sur la fleche U+2192 en
+  cp1252 ne se produit plus. Verifie par dry-run sans PYTHONIOENCODING.
+- **L4 CORRIGE** : `dev10_pur_render.yml` pointe `gyutedy/PERTURABO` +
+  `pari-forge-perturabo-xs4c` (defaut et repli inline).
+- **M3/M4 CORRIGE** : nouveau `BRIDGE/CODEBASE/lac_adapter_mark1.py`.
+  Convertit un pack MARK1 (N assets, mode:mark1) en N packs PUR
+  (mode:pur, 1 clip chacun) et injecte `--vod-url`. Verifie : 3 packs PUR
+  produits depuis `production_pack_mark1_e99bd523.json`, et le premier
+  passe `lac_bridge_forge.py --pur` avec `[ok] Pack PUR valide`.
+
+Restent ouverts : M1 (titres haches), M2 (chemin local), L2 (npm install),
+L3 (review), L5 (fixture), L6 (python3).

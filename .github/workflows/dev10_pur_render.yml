@@ -16,11 +16,11 @@ on:
       perturabo_repo:
         description: "Repo PERTURABO EXPORT"
         required: false
-        default: "jfbjfojfonf/PERTURABO"
+        default: "gyutedy/PERTURABO"
       perturabo_branch:
         description: "Branche PERTURABO EXPORT"
         required: false
-        default: "v2-live-vox-c"
+        default: "pari-forge-perturabo-xs4c"
       style:
         description: "Style LOOK force (G0-S). Vide = style declare par le pack."
         required: false
@@ -67,8 +67,8 @@ jobs:
           python3 - <<'PY'
           import json, os, urllib.request
           from pathlib import Path
-          repo = os.environ.get("PERTURABO_REPO") or "jfbjfojfonf/PERTURABO"
-          branch = os.environ.get("PERTURABO_BRANCH") or "v2-live-vox-c"
+          repo = os.environ.get("PERTURABO_REPO") or "gyutedy/PERTURABO"
+          branch = os.environ.get("PERTURABO_BRANCH") or "pari-forge-perturabo-xs4c"
           export = "MONDES_FORGES/CLIPPING/EXPORT"
           filt = (os.environ.get("PACK_FILTER") or "").strip().lower()
           token = os.environ.get("GITHUB_TOKEN") or ""
