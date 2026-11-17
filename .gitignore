@@ -110,3 +110,12 @@ F06_LUTHER/OUT/*
 F03_POSTPROD/CODEBASE/glow/tests/_work/
 WORK/
 node_modules/
+
+# F01_LOOK : artefacts de rendu (jamais committer)
+F01_LOOK/CODEBASE/public/clips/
+F01_LOOK/CODEBASE/public/watermark/
+F01_LOOK/CODEBASE/public/pur_manifest.json
+F01_LOOK/OUT/
+BRIDGE/OUT/pur_manifest.json
+BRIDGE/PUR/
+.pr4_tmp/

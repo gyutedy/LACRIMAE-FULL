@@ -10,7 +10,16 @@ function withStaticClips(manifest) {
     const rel = clip.replace(/^\.?\//, '');
     return { ...entry, clip_file: staticFile(rel) };
   }) : [];
-  return { ...manifest, entries };
+  // Le logo vit dans public/ (render_pictor.mjs le copie) : meme traitement.
+  const logo = manifest.narrative?.logo;
+  let narrative = manifest.narrative;
+  if (logo && logo.src && !String(logo.src).startsWith('http') && !String(logo.src).startsWith('data:')) {
+    narrative = {
+      ...manifest.narrative,
+      logo: { ...logo, src: staticFile(String(logo.src).replace(/^\.?\//, '')) },
+    };
+  }
+  return { ...manifest, entries, narrative };
 }
 
 export function PurLook({ purManifest, session, entryIndex = 0, muted = false }) {

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, Video } from 'remotion';
+import { AbsoluteFill, Img, useCurrentFrame, useVideoConfig, Video } from 'remotion';
 import { antiDetectionTransform } from './antiDetection';
 import { normalizePurOverlayParams, normalizePurStyleParams } from './bridgeClipper';
 
@@ -14,6 +14,55 @@ function withAlpha(hex, alpha) {
   if (!m) return hex;
   const n = parseInt(m[1], 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${Number(alpha ?? 1).toFixed(3)})`;
+}
+
+// ── logo / watermark (pris tel quel au salvage dev8, OmniComposition.jsx
+// 661-700, source : TRACKING/SALVAGE/review_dev8) — 7 positions + custom. ──
+const LOGO_PAD = 40;
+
+function getLogoPosition(logo) {
+  const position = logo.position || 'centered';
+  if (position === 'custom') {
+    return {
+      left: `${logo.x_pct ?? 50}%`,
+      top: `${logo.y_pct ?? 50}%`,
+      transform: 'translate(-50%, -50%)',
+    };
+  }
+  switch (position) {
+    case 'top_left':
+      return { top: LOGO_PAD, left: LOGO_PAD };
+    case 'top_center':
+      return { top: LOGO_PAD, left: '50%', transform: 'translateX(-50%)' };
+    case 'top_right':
+      return { top: LOGO_PAD, right: LOGO_PAD };
+    case 'bottom_left':
+      return { bottom: LOGO_PAD, left: LOGO_PAD };
+    case 'bottom_center':
+      return { bottom: LOGO_PAD, left: '50%', transform: 'translateX(-50%)' };
+    case 'bottom_right':
+      return { bottom: LOGO_PAD, right: LOGO_PAD };
+    case 'centered':
+    default:
+      return { left: '50%', top: '50%', transform: 'translate(-50%, -50%)' };
+  }
+}
+
+function LogoOverlay({ logo }) {
+  if (!logo || logo.enabled !== true || !logo.src) return null;
+  return (
+    <Img
+      src={logo.src}
+      style={{
+        position: 'absolute',
+        width: `${Number(logo.width_pct ?? 15)}%`,
+        opacity: Number(logo.opacity ?? 0.8),
+        zIndex: 40,
+        pointerEvents: 'none',
+        ...getLogoPosition(logo),
+      }}
+    />
+  );
 }
 
 const measureCtx = typeof document !== 'undefined'
@@ -216,6 +265,8 @@ export function PurPackComposition({ purManifest, session: sessionProp, entryInd
         const p = (frame - outroStart) / Math.max(1, outroFrames);
         return <AbsoluteFill style={{ background: `rgba(0,0,0,${(p * 0.95).toFixed(3)})`, pointerEvents: 'none' }} />;
       })()}
+
+      <LogoOverlay logo={manifest.narrative?.logo} />
     </AbsoluteFill>
   );
 }

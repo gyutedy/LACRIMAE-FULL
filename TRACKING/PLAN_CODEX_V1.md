@@ -102,7 +102,7 @@ Schema `sanguinala.postprod.codex.v1`.
 | **PR1** | Docs vraies (ce document + 9 docs alignes) | aucun code modifie |
 | **PR2** | Route Actions reparee (chemins `F00_SOURCE` / `F01_LOOK` / `F05`, `BRIDGE/PUR` mono-clip, Heisenberg retire) + `ffmpeg` dans le PATH du job et `tools/ffmpeg_bin.py` | **FAIT** — le job va jusqu'a `CLIP PUR MANQUANT`, plus de 404 |
 | **PR3** | Contrat des 2 codex : schemas, exemples, normaliseurs, tests, sortie du `.gitignore` | **FAIT** — `python tools/codex.py check ...` refuse un champ manquant (exit 1) et `validated_by_magos:false` (exit 2) ; 20 tests verts |
-| **PR4** | Le moteur applique `codex_render` : `run_all.py` appelle Remotion, `apply_look_blur` supprime, `LogoOverlay` porte, watermark propage depuis le pack | 1 pack -> N MP4 en `OUT/` : titre + logo, 0 sous-titre |
+| **PR4** | Le moteur applique `codex_render` : `run_all.py` appelle Remotion, `apply_look_blur` supprime, `LogoOverlay` porte, watermark propage depuis le pack | **FAIT** — `convert_pur_pack.mjs --codex-render` projette style/look/titre/logo ; `run_all.py` rend par `render_pictor.mjs` (plus de blur) ; `LogoOverlay` dans `_purPackComposition.jsx` ; PNG du pack via `--watermarks` ; 3 clips locaux rendus puis livres (`logo 14,8 %` centre, titre du pack) |
 | **PR5** | Post-prod applique `codex_postprod` + inversion `GLOW -> CAPTION` | glow applique, sous-titres non floutes |
 | **PR6** | Review en ligne ecrit les 2 codex (action `codex_write.yml`) + inputs `codex_render_url` / `codex_postprod_url` | l'operateur clique depuis Pages, aucun git manuel |
 

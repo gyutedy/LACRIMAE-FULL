@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -31,7 +32,7 @@ ALLOWED_STYLES = {"blur", "reframing"}
 MAX_SEGMENT = 150.0
 
 sys.path.insert(0, str(ROOT / "tools"))
-from ffmpeg_bin import FFMPEG, FFPROBE  # noqa: E402  (AUDIT_V1 L10)
+from ffmpeg_bin import FFMPEG, FFPROBE, FFMPEG_TOOLS_DIR  # noqa: E402  (AUDIT_V1 L10)
 
 BRIDGE_PY = ROOT / "BRIDGE" / "CODEBASE" / "lac_bridge_forge.py"
 F00_PY = ROOT / "F00_SOURCE" / "CODEBASE" / "f00_pur.py"
@@ -45,6 +46,9 @@ CAPTION_STYLE = ROOT / "F03_POSTPROD" / "CODEBASE" / "caption" / "OUT" / "style.
 CAPTION_PREVIEW = ROOT / "F03_POSTPROD" / "CODEBASE" / "caption" / "PREVIEW" / "CODEBASE"
 F03_PREVIEW = ROOT / "F03_PREVIEW" / "CODEBASE"
 REVIEW_JSON = ROOT / "REVIEW" / "codex.json"
+CODEX_RENDER = ROOT / "REVIEW" / "codex_render.json"
+CONVERT_MJS = ROOT / "tools" / "convert_pur_pack.mjs"
+RENDER_PICTOR = ROOT / "F01_LOOK" / "CODEBASE" / "render_pictor.mjs"
 
 
 def log(msg: str) -> None:
@@ -102,9 +106,17 @@ def gate_g0(pack: dict) -> int:
     return 0
 
 
-def gate_g0s(pack: dict, style_arg: str | None) -> int:
+def gate_g0s(pack: dict, style_arg: str | None, codex_style: str | None = None) -> int:
     sp = pack.get("style_pack") or {}
-    style = (style_arg or sp.get("style") or pack.get("montage_style") or "").lower()
+    # Trois formes reelles : codex (il commande), --style, pack MARK1 (asset_mode).
+    style = (
+        style_arg
+        or codex_style
+        or sp.get("style")
+        or pack.get("asset_mode")
+        or pack.get("montage_style")
+        or ""
+    ).lower()
     if style not in ALLOWED_STYLES:
         log(f"G0-S STYLE FAIL: {style!r} (blur|reframing only, split_scene = V2+)")
         return 2
@@ -168,9 +180,13 @@ def download_segment(vod_url: str, start: float, end: float, dest: Path) -> int:
         "--force-keyframes-at-cuts",
         "-f", "bv*[height<=720]+ba/b",
         "--no-playlist",
-        "-o", str(raw),
-        vod_url,
     ]
+    # yt-dlp cherche `ffmpeg` dans le PATH pour les sections : il ne le trouve
+    # pas ici (L10). Et il exige ffmpeg + ffprobe dans le MEME dossier
+    # (ffmpeg_bin.tools_dir resout ce dossier).
+    if FFMPEG_TOOLS_DIR:
+        cmd += ["--ffmpeg-location", FFMPEG_TOOLS_DIR]
+    cmd += ["-o", str(raw), vod_url]
     log("G1 SOURCE: yt-dlp segment " + seconds_to_hms(start) + " -> " + seconds_to_hms(end))
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
     if r.returncode != 0 or not raw.is_file():
@@ -190,28 +206,60 @@ def download_segment(vod_url: str, start: float, end: float, dest: Path) -> int:
     return 0
 
 
-def apply_look_blur(src: Path, dst: Path) -> int:
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    vf = (
-        "[0:v]split=2[bg][fg];"
-        "[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=20[b];"
-        "[fg]scale=1080:1920:force_original_aspect_ratio=decrease[f];"
-        "[b][f]overlay=(W-w)/2:(H-h)/2[v]"
-    )
-    cmd = [
-        FFMPEG, "-y", "-i", str(src),
-        "-filter_complex", vf, "-map", "[v]", "-map", "0:a?",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-b:a", "128k",
-        str(dst),
-    ]
-    log("G3 LOOK: blur 9:16 0 zoom")
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    if r.returncode != 0 or not dst.is_file():
-        log("G3 LOOK FAIL: " + (r.stderr or "")[-800:])
+def build_manifest(pack: Path, out: Path, codex: Path | None, packs_out: Path) -> int:
+    """BRIDGE : pack (+ codex_render) -> manifest PUR. Le codex commande, le pack fournit."""
+    node = shutil.which("node")
+    if not node:
+        log("BRIDGE FAIL: node introuvable")
+        return 2
+    out.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [node, str(CONVERT_MJS), "--pack", str(pack), "--out", str(out), "--packs-out", str(packs_out)]
+    if codex:
+        cmd += ["--codex-render", str(codex)]
+    r = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace")
+    for line in (r.stdout or "").splitlines():
+        if line.strip():
+            log(line.rstrip())
+    if r.returncode != 0:
+        log("BRIDGE FAIL: " + ((r.stderr or r.stdout or "")[-900:]))
         return 2
     return 0
 
+
+def render_look(manifest: Path, index: int, clips_dir: Path, out_dir: Path, watermarks: Path) -> int:
+    """P2 LOOK : le moteur Remotion dessine (titre du pack + logo du codex, 0 zoom)."""
+    node = shutil.which("node")
+    if not node:
+        log("G3 LOOK FAIL: node introuvable")
+        return 2
+    log(f"P2 LOOK entry {index}: moteur Remotion → {out_dir.name}")
+    cmd = [
+        node, str(RENDER_PICTOR),
+        "--manifest", str(manifest),
+        "--clips", str(clips_dir),
+        "--out", str(out_dir),
+        "--watermarks", str(watermarks),
+        "--entry", str(index),
+    ]
+    r = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        log("G3 LOOK FAIL (P2 moteur, entry %d): %s" % (index, ((r.stdout or "")[-700:] + (r.stderr or "")[-500:])))
+        return 2
+    for line in (r.stdout or "").splitlines():
+        if line.strip().startswith(("  [ok]", "  logo", "  [..]")):
+            log(line.rstrip())
+    return 0
+
+
+def segment_of(asset: dict) -> dict:
+    """MARK1 : bornes a plat sur l'asset. PUR : montage_instructions.segment. Les deux."""
+    if isinstance(asset.get("montage_instructions"), dict):
+        return asset["montage_instructions"]
+    seg = {}
+    for key in ("start_sec", "end_sec"):
+        if asset.get(key) is not None:
+            seg[key] = asset[key]
+    return seg
 
 def make_look_sample(path: Path, seconds: float) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -275,21 +323,27 @@ def gate_g4(style_pack: dict, require_preview: bool) -> int:
     return 0
 
 
-def gate_w1_t1(style_pack: dict, review_path: Path, require_preview: bool) -> int:
-    if review_path.is_file():
-        log(f"W1 REVIEW OK: {review_path}")
-        titles = (style_pack.get("titles") or [])
-        if titles:
-            log(f"T1 TITRES OK: {len(titles)} titre(s) depuis review")
-        else:
-            log("T1 TITRES: aucun titre dans review/pack")
+def gate_w1r(codex_path: Path, require: bool) -> int:
+    """W1-R : le codex render commande le moteur. Refus si absent/invalide."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import codex as codex_mod
+
+    if not codex_path.is_file():
+        if require:
+            log(f"W1-R FAIL: codex render absent ({codex_path})")
+            return 2
+        log(f"W1-R: codex render absent ({codex_path}) — style declare par le pack")
         return 0
-    if require_preview:
-        log("W1 REVIEW FAIL: F03_PREVIEW non validee (REVIEW/codex.json absent)")
-        return 2
-    log("W1 REVIEW: JSON absent — titres/watermark pack bruts (preview non validee)")
-    if style_pack.get("titles"):
-        log(f"T1 TITRES: {len(style_pack['titles'])} titre(s) pack, pas encore valides en review")
+    try:
+        loaded = codex_mod.load_render_codex(codex_path, require_validated=require)
+    except codex_mod.CodexError as exc:
+        log(str(exc))
+        for err in exc.errors:
+            log(f"    - {err}")
+        return exc.code
+    log(f"W1-R OK: {codex_path.name} (style={loaded['style']}, logo={'on' if loaded['logo'].get('enabled') else 'off'})")
+    if loaded.get("validated_by_magos") is not True:
+        log("W1-R: validated_by_magos=false — rendu autorise en local, refuse en CI")
     return 0
 
 
@@ -297,23 +351,20 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def codex_style_of(codex_path: Path) -> str | None:
+    """Style declare par le codex (il commande), sans le valider : gate_w1r le fera."""
+    if not codex_path.is_file():
+        return None
+    try:
+        return str(load_json(codex_path).get("style") or "") or None
+    except (OSError, ValueError):
+        return None
+
+
 def merge_review(style_pack: dict, review_path: Path) -> dict:
-    if not review_path.is_file():
-        return style_pack
-    raw = load_json(review_path)
-    incoming = raw.get("style_pack") if isinstance(raw.get("style_pack"), dict) else raw
-    merged = dict(style_pack)
-    for key in ("titles", "watermark", "look"):
-        if key in incoming and incoming[key] not in (None, [], {}):
-            merged[key] = incoming[key]
-    look = incoming.get("look") if isinstance(incoming.get("look"), dict) else {}
-    if look.get("style"):
-        merged["style"] = look["style"]
-    if isinstance(look.get("style_params"), dict):
-        merged["style_params"] = look["style_params"]
-        merged["look"] = look
-    log("W1/T1: style_pack fusionne depuis JSON review")
-    return merged
+    """Legacy (REVIEW/codex.json). En V1 le codex ne fusionne plus ici :
+    codex_render est projete par le BRIDGE, codex_postprod par F03_POSTPROD."""
+    return style_pack
 
 
 def merge_caption_style(style_pack: dict) -> dict:
@@ -386,7 +437,9 @@ def main() -> int:
     ap.add_argument("--out", type=Path, default=ROOT / "OUT")
     ap.add_argument("--style", default=None, choices=sorted(ALLOWED_STYLES))
     ap.add_argument("--look-dir", type=Path, default=None)
-    ap.add_argument("--review", type=Path, default=REVIEW_JSON)
+    ap.add_argument("--review", type=Path, default=REVIEW_JSON, help="legacy (REVIEW/codex.json), ignore en V1")
+    ap.add_argument("--codex-render", type=Path, default=CODEX_RENDER, help="codex qui commande le moteur (style, look, titre, logo)")
+    ap.add_argument("--watermarks", type=Path, default=None, help="dossier du PNG watermark (defaut : dossier du pack)")
     ap.add_argument("--preview-stage", action="store_true", help="clip de reference + stage F03_PREVIEW et F07 PREVIEW, stop")
     ap.add_argument("--require-previews", action="store_true", help="W1/G4 FAIL si JSON review / style.json absents")
     ap.add_argument("--dry-run", action="store_true")
@@ -396,7 +449,7 @@ def main() -> int:
     code = gate_g0(pack)
     if code:
         return code
-    code = gate_g0s(pack, args.style)
+    code = gate_g0s(pack, args.style, codex_style_of(args.codex_render))
     if code:
         return code
 
@@ -408,13 +461,13 @@ def main() -> int:
     style_pack = pack.get("style_pack") or {}
     style_pack = merge_review(style_pack, args.review)
     style_pack = merge_caption_style(style_pack)
-    log("PIPELINE: F03_PREVIEW (W1/T1) → F00_SOURCE → F01_LOOK → F02_MONTAGE → F03_POSTPROD (F07 CAPTION → GLOW → LUT → FADE) → F05 → F06")
-    log(f"G-PACK: meme style_pack pour tous les assets ({len(items)} clips)")
+    log("PIPELINE: BRIDGE (codex_render) → F00_SOURCE → F01_LOOK (P2 moteur) → F02_MONTAGE → F03_POSTPROD (F07 CAPTION → GLOW → LUT → FADE) → F05 → F06")
+    log(f"G-PACK: meme codex pour tous les assets ({len(items)} clips)")
     if args.dry_run:
         log("DRY-RUN: portes G0/G0-S OK, stop avant execution.")
         return 0
 
-    code = gate_w1_t1(style_pack, args.review, args.require_previews and not args.preview_stage)
+    code = gate_w1r(args.codex_render, args.require_previews and not args.preview_stage)
     if code:
         return code
     code = gate_g4(style_pack, args.require_previews and not args.preview_stage)
@@ -428,19 +481,33 @@ def main() -> int:
     args.out.mkdir(parents=True, exist_ok=True)
     style_pack_path = args.work / "style_pack.json"
     style_pack_path.write_text(json.dumps(style_pack, indent=2), encoding="utf-8")
+
+    # BRIDGE : une seule projection codex pour tous les clips. Le codex fixe
+    # style/look/titre/logo ; le pack fournit texte, bornes et PNG.
+    manifest_path = args.work / "pur_manifest.json"
+    code = build_manifest(
+        args.pack,
+        manifest_path,
+        args.codex_render if args.codex_render.is_file() else None,
+        args.work / "PUR",
+    )
+    if code:
+        return code
+    watermarks_dir = args.watermarks or args.pack.parent
+    log(f"G3 LOOK: moteur Remotion (manifest={manifest_path.name}, watermark={watermarks_dir})")
     stage_f03_preview(args.pack, None)
 
     delivered = 0
     ref_id = pack.get("reference_asset") or (items[0].get("id") if items else None)
-    for asset in items:
+    for index, asset in enumerate(items):
         aid = asset.get("id") or "clip"
         log(f"=== asset {aid} ===")
-        mi = asset.get("montage_instructions") or {}
+        mi = segment_of(asset)
         mi_path = args.work / f"{aid}_montage.json"
         mi_path.write_text(json.dumps(mi, indent=2), encoding="utf-8")
 
-        look_mp4 = args.work / f"{aid}_look.mp4"
-        src_mp4 = args.work / f"{aid}_src.mp4"
+        look_mp4 = args.work / f"pur_{aid}_look.mp4"
+        src_mp4 = args.work / f"pur_{aid}.mp4"
         if args.look_dir:
             cand = args.look_dir / f"{aid}_look.mp4"
             if cand.is_file():
@@ -458,7 +525,8 @@ def main() -> int:
                 code = download_segment(vod_url, start, end, src_mp4)
                 if code:
                     return code
-                code = apply_look_blur(src_mp4, look_mp4)
+                # P2 : le moteur dessine (titre pack + logo codex). Plus de blur ffmpeg.
+                code = render_look(manifest_path, index, args.work, args.work, watermarks_dir)
                 if code:
                     return code
         else:
@@ -481,7 +549,7 @@ def main() -> int:
                 log("PREVIEW STAGE OK: F07 PREVIEW public/target.mp4")
                 log("Operateur: cd F03_PREVIEW/CODEBASE && npm ci && npm run dev   (port 5174)")
                 log("Operateur: cd F03_POSTPROD/CODEBASE/caption/PREVIEW/CODEBASE && npm ci && npm run dev   (port 5173)")
-                log("Valider: Export JSON review -> REVIEW/codex.json")
+                log("Valider: Export codex -> REVIEW/codex_render.json + REVIEW/codex_postprod.json")
                 log("Valider: Save s1 -> F03_POSTPROD/CODEBASE/caption/OUT/style.json")
                 log("Puis relancer run_all SANS --preview-stage")
                 return 0

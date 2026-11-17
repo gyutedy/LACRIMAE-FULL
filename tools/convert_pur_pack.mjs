@@ -29,20 +29,42 @@ const get = (flag) => {
 const packPath = get('--pack');
 const packsList = get('--packs');
 const outPath = get('--out');
-const canvas = get('--canvas') || '9:16';
 const clip = get('--clip') || '';
-const fps = Number(get('--fps') || 30);
 const refManifest = get('--style-params') || '';
-const styleArg = get('--style');
 // --packs-out : ecrit un pack PUR mono-clip par angle. C'est ce que F00_SOURCE
 // consomme (f00_pur.py attend UN pack = UN segment). Sans ca, un pack MARK1
 // (N clips) n'a aucun pack par angle a donner a la fregate d'ingest.
 const packsOut = get('--packs-out') || '';
+// --codex-render : le codex commande. Il fixe style/canvas/fps, le look, le
+// style du titre et la place du logo. Le pack reste la matiere (texte, PNG).
+const codexPath = get('--codex-render') || '';
 
 if ((!packPath && !packsList) || !outPath) {
-  console.error('usage: convert_pur_pack.mjs (--pack <pack.json> | --packs <p1.json,p2.json,…>) --out <manifest.json> [--packs-out <dir>] [--canvas 9:16] [--clip clips/x.mp4] [--fps 30] [--style blur|reframing] [--style-params ref_manifest.json]');
+  console.error('usage: convert_pur_pack.mjs (--pack <pack.json> | --packs <p1.json,p2.json,…>) --out <manifest.json> [--codex-render REVIEW/codex_render.json] [--packs-out <dir>] [--canvas 9:16] [--clip clips/x.mp4] [--fps 30] [--style blur|reframing] [--style-params ref_manifest.json]');
   process.exit(1);
 }
+
+let codex = null;
+if (codexPath) {
+  try {
+    codex = JSON.parse(readFileSync(resolve(codexPath), 'utf-8'));
+  } catch (err) {
+    console.error(`✗ --codex-render illisible (${codexPath}) : ${err.message}`);
+    process.exit(1);
+  }
+  if (codex.schema_version !== 'sanguinala.render.codex.v1') {
+    console.error(`✗ REFUSE : ${codexPath} n'est pas un codex render (schema_version=${codex.schema_version})`);
+    process.exit(2);
+  }
+  if (codex.validated_by_magos !== true) {
+    console.error("✗ REFUSE (W1-R) : codex_render non valide par l'operateur (validated_by_magos != true)");
+    process.exit(2);
+  }
+}
+
+const canvas = (codex && codex.canvas) || get('--canvas') || '9:16';
+const fps = Number((codex && codex.fps) || get('--fps') || 30);
+const styleArg = (codex && codex.style) || get('--style');
 
 if (styleArg && !ALLOWED_STYLES.has(String(styleArg).toLowerCase())) {
   console.error(`✗ REFUSÉ : --style « ${styleArg} » non autorisé.`);
@@ -51,7 +73,7 @@ if (styleArg && !ALLOWED_STYLES.has(String(styleArg).toLowerCase())) {
 }
 
 const bridgeClipperUrl = new URL('../F03_PREVIEW/CODEBASE/src/preview/bridgeClipper.js', `file://${resolve(here)}/`);
-const { parsePurPack, parsePurPackMulti, expandSanguinalaPack } = await import(bridgeClipperUrl.href);
+const { parsePurPack, parsePurPackMulti, expandSanguinalaPack, buildPurLogo } = await import(bridgeClipperUrl.href);
 
 let refStyleParams;
 let refOverlayParams;
@@ -171,6 +193,38 @@ if (packsList) {
   refuseUnknown(manifest);
   console.log(`  style: ${manifest.style} (source: ${manifest.style_source}) — ${manifest.entries.length} video(s)`);
 }
+
+// Projette codex_render dans le manifeste : c'est la SEULE facon dont le codex
+// atteint le moteur. Le texte du titre n'est jamais touche : il vient du pack.
+//   codex.look   -> manifest.style_params
+//   codex.title  -> manifest.narrative.overlay.style_params
+//   codex.logo   -> manifest.narrative.logo (+ PNG du pack)
+const applyRenderCodex = (manifest, codex) => {
+  manifest.style = codex.style;
+  manifest.style_source = 'codex';
+  manifest.style_unknown = false;
+  manifest.style_params = { ...(manifest.style_params || {}), ...(codex.look || {}) };
+  const narrative = manifest.narrative || {};
+  narrative.overlay = narrative.overlay || {};
+  narrative.overlay.style_params = {
+    ...(narrative.overlay.style_params || {}),
+    ...(codex.title || {}),
+  };
+  const watermark = (manifest.pur && manifest.pur.watermark) || {};
+  narrative.logo = buildPurLogo(watermark, codex.logo || {});
+  manifest.narrative = narrative;
+  const logo = narrative.logo;
+  const logoLabel = logo.enabled
+    ? `${logo.position} ${logo.width_pct}% opacite ${logo.opacity} (${logo.src || 'PNG non declare'})`
+    : 'off';
+  console.log(
+    `  codex render : style=${manifest.style} titre=${codex.title.size}px`
+    + ` @${codex.title.x_pct}/${codex.title.y_pct}% logo=${logoLabel}`,
+  );
+  return manifest;
+};
+
+if (codex) manifest = applyRenderCodex(manifest, codex);
 
 const sfxDir = resolve('F01_LOOK/CODEBASE/public/sfx');
 const requiredSfx = [...new Set(manifest.entries

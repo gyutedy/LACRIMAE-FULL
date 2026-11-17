@@ -103,6 +103,47 @@ export function normalizePurOverlayParams(styleParams) {
   return { ...PUR_OVERLAY_DEFAULTS, ...(styleParams && typeof styleParams === 'object' ? styleParams : {}) };
 }
 
+// ── logo / watermark (SANGUINALA V1) ─────────────────────────────────────────
+// Le PNG vient du PACK (watermark.file, required:true), la place/la taille du
+// codex_render.logo. Dessine par le moteur (F01_LOOK), jamais en post-prod.
+export const PUR_LOGO_DEFAULTS = {
+  enabled: false,
+  width_pct: 15,
+  position: 'centered',
+  x_pct: 50,
+  y_pct: 50,
+  opacity: 0.8,
+  src: '',
+};
+
+export const PUR_LOGO_POSITIONS = [
+  'top_left', 'top_center', 'top_right',
+  'centered',
+  'bottom_left', 'bottom_center', 'bottom_right',
+  'custom',
+];
+
+// Un pack MARK1 declare `watermark.required: true` : un clip sans logo est un
+// pack fautif, pas un choix de style.
+export function buildPurLogo(watermark = {}, overrides = {}) {
+  const wm = watermark && typeof watermark === 'object' ? watermark : {};
+  const declared = wm.required === true || wm.enabled === true;
+  const logo = {
+    ...PUR_LOGO_DEFAULTS,
+    enabled: declared || Boolean(wm.file),
+    src: wm.file || '',
+    required: wm.required === true,
+  };
+  if (wm.size_pct != null) logo.width_pct = Number(wm.size_pct);
+  if (wm.position && PUR_LOGO_POSITIONS.includes(wm.position)) logo.position = wm.position;
+  if (wm.opacity != null) logo.opacity = Number(wm.opacity);
+  for (const [key, value] of Object.entries(overrides || {})) {
+    if (value !== undefined && value !== null) logo[key] = value;
+  }
+  if (!PUR_LOGO_POSITIONS.includes(logo.position)) logo.position = 'centered';
+  return logo;
+}
+
 export function inferPurStyle(mi = {}) {
   const body = mi.body || {};
   const miAny = mi;
@@ -227,6 +268,7 @@ export function expandSanguinalaPack(pack) {
     };
     return {
       pack_id: pack.pack_id || pack.pack_token || 'sanguinala',
+      pack_token: pack.pack_token || '',
       identite: { angle_id: asset.id || 'A01' },
       source: {
         vod_url: source.vod_url,
@@ -248,6 +290,9 @@ export function expandSanguinalaPack(pack) {
       montage_style: styleName,
       copywriting,
       style_pack: stylePack,
+      // L12 : le PNG du watermark appartient au pack. Sans cette ligne, il est
+      // jete ici et aucun moteur ne peut le dessiner.
+      watermark: pack.watermark || null,
       canvas,
     };
   });
@@ -327,6 +372,7 @@ export function parsePurPack(pack, options = {}) {
       category: style.pacing || '',
       energy_level: style.energy_level || 'high',
       overlay: buildPurOverlay(overlayLines, mainTitle, hookDuration, fps, options.overlayParams),
+      logo: buildPurLogo(pack.watermark, options.logoParams),
     },
     entries: [entry],
     duration_seconds: sourceDuration,
@@ -344,6 +390,8 @@ export function parsePurPack(pack, options = {}) {
       body: { duration_sec: bodyDuration, energy_curve: body.energy_curve || [] },
       outro: { duration_sec: outroDuration, type: outro.type || 'fade_to_black', note: outro.note || '' },
       compliance: mi.compliance || pack.compliance || {},
+      // Le PNG du watermark voyage jusqu'au moteur : fichier + obligatoire.
+      watermark: pack.watermark || null,
     },
   };
 }

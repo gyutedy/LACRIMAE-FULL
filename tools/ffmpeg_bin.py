@@ -57,3 +57,26 @@ def resolve_tool(name: str) -> str:
 
 FFMPEG = resolve_tool("ffmpeg")
 FFPROBE = resolve_tool("ffprobe")
+
+
+def tools_dir() -> str:
+    """Dossier contenant ffmpeg ET ffprobe.
+
+    yt-dlp exige les DEUX dans le meme dossier pour `--download-sections` ; sur
+    cette machine ffmpeg vient d'imageio-ffmpeg (sans ffprobe) et ffprobe de
+    C:\ffmpeg\bin. Donner le seul dossier de ffmpeg a yt-dlp echoue avec
+    « ffmpeg is not installed » — message trompeur, le binaire etant present.
+    """
+    wanted = ("ffmpeg", "ffprobe")
+    for exe in (FFPROBE, FFMPEG):
+        folder = Path(exe).parent
+        try:
+            names = [p.name.lower() for p in folder.iterdir() if p.is_file()]
+        except OSError:
+            continue
+        if all(any(n.startswith(w) for n in names) for w in wanted):
+            return str(folder)
+    return str(Path(FFMPEG).parent)
+
+
+FFMPEG_TOOLS_DIR = tools_dir()

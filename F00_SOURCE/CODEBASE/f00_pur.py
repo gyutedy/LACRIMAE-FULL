@@ -15,6 +15,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
+from ffmpeg_bin import FFMPEG, FFPROBE  # noqa: E402  (AUDIT_V1 L10)
+
 MAX_SEGMENT_SECONDS = 150.0
 DURATION_TOLERANCE_SEC = 0.5
 REDRIFT_MAX_EXCESS_SEC = 3.0
@@ -79,7 +82,7 @@ def build_ytdlp_command(vod_url: str, start: float, end: float, out_path: Path) 
 
 def probe_clip(path: Path) -> dict:
     cmd = [
-        "ffprobe", "-v", "error", "-show_entries",
+        FFPROBE, "-v", "error", "-show_entries",
         "stream=codec_name,codec_type,width,height:format=duration",
         "-of", "json", str(path),
     ]
@@ -191,7 +194,7 @@ def main() -> int:
     clip_path = args.out / clip_name
     if downloaded.suffix.lower() != ".mp4":
         subprocess.run(
-            ["ffmpeg", "-y", "-v", "error", "-i", str(downloaded),
+            [FFMPEG, "-y", "-v", "error", "-i", str(downloaded),
              "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
              "-c:a", "aac", "-b:a", "192k", str(clip_path)],
             check=True)
@@ -205,7 +208,7 @@ def main() -> int:
         print(f"  [..] G2 DUREE : +{excess:.2f}s (derive fragments) -> re-decoupe locale...")
         fixed = clip_path.with_name(clip_path.stem + "_g2fix.mp4")
         subprocess.run(
-            ["ffmpeg", "-y", "-v", "error", "-i", str(clip_path),
+            [FFMPEG, "-y", "-v", "error", "-i", str(clip_path),
              "-t", f"{expected_duration:.3f}",
              "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
              "-c:a", "aac", str(fixed)],

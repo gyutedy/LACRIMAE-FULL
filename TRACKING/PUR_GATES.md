@@ -30,6 +30,7 @@ pack PUR + codex_render.json
 | **G4 CAPTION** | POST-PROD | `codex_postprod.caption` (schema `dev11.caption.style.v1`) ; overlay Whisper/Blender = runtime Modal |
 | **GL1 / GL2** | POST-PROD | `codex_postprod.glow` : sigma 4–30, opacite <= 0,6 ; preview frame avant batch |
 | **L1 / F1** | POST-PROD | `codex_postprod.lut` (.cube existe si actif) ; `fade_out` vers la fin |
+| **P3 WATERMARK** | F01_LOOK (avant rendu) | `codex_render.logo.enabled` et `narrative.logo.src` ; le PNG (`pack.watermark.file`) doit exister dans le dossier `--watermarks`. Absent = rendu refuse (`render_pictor.mjs`) |
 | **T1 TITRES** | F01_LOOK | le titre vient du **pack** (`copywriting.overlay_title`), le style du **codex render**. Le codex ne nomme jamais un titre |
 | **G-PACK** | POST-PROD | meme codex render applique a N clips, aucun reglage par clip |
 | **G6 LIVRABLE** | F05/F06 | H.264 yuv420p faststart, N MP4 = N assets |

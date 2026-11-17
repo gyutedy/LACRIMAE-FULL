@@ -18,6 +18,11 @@ const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(here, '../..');
 const ALLOWED = new Set(['blur', 'reframing']);
 const ZOOM_BANNED = /\b(zoompan|breathing_zoom|swell|scaleX\(|scaleY\()\b/i;
+// Sous Windows, `npx` est un shim .cmd : spawnSync('npx') renvoie ENOENT et
+// `spawnSync npx.cmd` renvoie EINVAL. On appelle donc le CLI Remotion avec
+// node directement quand il est installe (npm ci), sinon on retombe sur npx.
+const NPX = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const REMOTION_CLI = resolve(here, 'node_modules/@remotion/cli/remotion-cli.js');
 
 const args = process.argv.slice(2);
 const get = (flag) => {
@@ -29,6 +34,7 @@ const has = (flag) => args.includes(flag);
 const manifestPath = get('--manifest') || resolve(ROOT, 'BRIDGE/OUT/pur_manifest.json');
 const clipsDir = get('--clips') || resolve(ROOT, 'F00_SOURCE/OUT');
 const outDir = get('--out') || resolve(ROOT, 'F01_LOOK/OUT');
+const watermarkDir = get('--watermarks') || resolve(ROOT, 'BRIDGE/IN');
 const entryArg = get('--entry');
 const dryRun = has('--dry-run');
 
@@ -53,6 +59,27 @@ for (const src of [compositionSrc, previewSrc]) {
 const publicDir = resolve(here, 'public');
 const publicClips = resolve(publicDir, 'clips');
 mkdirSync(publicClips, { recursive: true });
+
+// Logos : le PNG appartient au pack (watermark.file, required:true). Le codex
+// dit ou et comment. Il doit etre present AVANT le rendu, sinon le MP4 sort
+// sans watermark et personne ne le voit dans les logs.
+const logo = manifest.narrative?.logo;
+if (logo && logo.enabled) {
+  const file = String(logo.src || '').split(/[\\/]/).pop();
+  const src = file ? resolve(watermarkDir, file) : '';
+  if (!file) fail('LOGO : le pack declare un watermark mais aucun fichier (watermark.file)', 2);
+  if (!existsSync(src)) {
+    fail(`LOGO MANQUANT : ${file} introuvable dans ${watermarkDir} — le pack dit required:true (P3)`, 2);
+  }
+  const publicWm = resolve(publicDir, 'watermark');
+  mkdirSync(publicWm, { recursive: true });
+  copyFileSync(src, resolve(publicWm, file));
+  logo.src = `watermark/${file}`;
+  console.log(`  logo : ${file} → public/watermark/ (${logo.position} ${logo.width_pct}% opacite ${logo.opacity})`);
+} else if (manifest.pur?.watermark?.required === true) {
+  console.warn('  [!] watermark requis par le pack mais codex_render.logo.enabled=false');
+}
+
 const publicManifest = resolve(publicDir, 'pur_manifest.json');
 writeFileSync(publicManifest, JSON.stringify(manifest, null, 2) + '\n');
 
@@ -94,11 +121,10 @@ for (const index of indices) {
   const propsFile = resolve(outDir, `pur_${angle}_look.props.json`);
   writeFileSync(propsFile, JSON.stringify(props));
 
-  const cmd = [
-    'npx', 'remotion', 'render', 'src/index.jsx', 'PurLook', dest,
-    `--props=${propsFile}`,
-    '--overwrite',
-  ];
+  const renderArgs = ['render', 'src/index.jsx', 'PurLook', dest, `--props=${propsFile}`, '--overwrite'];
+  const cmd = existsSync(REMOTION_CLI)
+    ? [process.execPath, REMOTION_CLI, ...renderArgs]
+    : [NPX, 'remotion', ...renderArgs];
   console.log(`  [..] P2 LOOK ${angle} (${manifest.style}) → ${dest}`);
   if (dryRun) {
     console.log(`  [dry-run] ${cmd.join(' ')}`);
@@ -106,6 +132,7 @@ for (const index of indices) {
     continue;
   }
   const result = spawnSync(cmd[0], cmd.slice(1), { cwd: here, stdio: 'inherit', env: process.env });
+  if (result.error) fail(`remotion render impossible pour ${angle} : ${result.error.message}`, 4);
   if (result.status !== 0) fail(`remotion render echoue pour ${angle} (exit ${result.status})`);
   rendered.push({ angle, dest });
   console.log(`  [ok] P2 LOOK ${angle}`);

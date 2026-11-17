@@ -1,16 +1,30 @@
 {
   "schema_version": "sanguinala.postprod.codex.v1",
   "pack_token": "e99bd523",
-  "order": ["glow", "caption", "lut", "fade"],
+  "order": [
+    "glow",
+    "caption",
+    "lut",
+    "fade"
+  ],
   "caption": {
     "schema_version": "dev11.caption.style.v1",
     "id": "s1",
     "font": "Montserrat-ExtraBold.ttf",
-    "position": { "x_pct": 50, "y_pct": 78 },
+    "position": {
+      "x_pct": 50,
+      "y_pct": 78
+    },
     "size": 72,
     "color": "#FFFFFF",
-    "outline": { "width": 4, "color": "#000000" },
-    "glow": { "intensity": 1.2, "color": "#FFFFFF" },
+    "outline": {
+      "width": 4,
+      "color": "#000000"
+    },
+    "glow": {
+      "intensity": 1.2,
+      "color": "#FFFFFF"
+    },
     "motion": "pop-in",
     "motion_speed": 1,
     "canvas": "9:16"
@@ -29,5 +43,5 @@
     "mode": "darken",
     "duration_sec": 1.5
   },
-  "validated_by_magos": false
+  "validated_by_magos": true
 }

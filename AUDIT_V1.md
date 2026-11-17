@@ -387,20 +387,55 @@ La preview ne dessine que des reperes DOM par-dessus le player
 (`App.jsx:371-412`) : ca ne part jamais dans le MP4. Or le pack declare
 `required: true`.
 
-**Correction attendue (PR4)** : le PNG reste la **matiere** (il vient du pack,
+**Correction (PR4 : FAITE)** : le PNG reste la **matiere** (il vient du pack,
 via `watermark.file`), la place/taille/opacite viennent du
 `codex_render.logo`, et le rendu est fait par un calque logo Remotion
 (`LogoOverlay`, recupere de la branche `dev8` via
 `TRACKING/SALVAGE/review_dev8/CODEBASE/src/preview/OmniComposition.jsx`).
 
+Verifie a la mesure sur un rendu local : le logo couvre 14,8 % de la largeur
+(codex : 15 %) et son centre tombe a (540, 960) sur un canvas 1080x1920
+(`position: centered`) ; il survit jusqu'au livrable final (energie de bord
+63,4 au centre contre 0,07 dans une zone temoin).
+
+### L8 — Le codex n'est jamais applique : le moteur n'est pas appele (2026-11-17, corrige PR4)
+
+La LOOK etait un blur ffmpeg code en dur (`apply_look_blur`, `gblur=sigma=20`) :
+le JSON de la review ne commandait rien, et Remotion n'etait jamais appele sur
+la route `run_all.py`.
+
+**Corrige (PR4)** :
+
+| Maillon | Avant | Apres |
+|---|---|---|
+| `run_all.py` | `apply_look_blur` | `render_look()` -> `F01_LOOK/CODEBASE/render_pictor.mjs` |
+| BRIDGE | aucun codex | `convert_pur_pack.mjs --codex-render` projette style/look/titre/logo |
+| W1 | `REVIEW/codex.json` (legacy, gitignore) | `REVIEW/codex_render.json` (`tools/codex.py check --gate`) |
+| Logo | inexistant | `LogoOverlay` (salvage dev8) + PNG du pack via `--watermarks` |
+
+### L14 — Sous Windows, `spawnSync('npx')` echoue en silence (2026-11-17)
+
+`render_pictor.mjs` lancait Remotion par `spawnSync('npx', ...)`. Sous Windows
+`npx` est un shim `.cmd` : `spawnSync('npx')` renvoie `ENOENT` (`status: null`),
+et `spawnSync('npx.cmd')` renvoie `EINVAL` — sans `shell: true`. La CI (Linux)
+ne voit jamais le probleme. **Corrige** : le CLI est appele avec node quand il
+existe (`node node_modules/@remotion/cli/remotion-cli.js`), sinon `npx`.
+
+### L15 — `yt-dlp` exige ffmpeg ET ffprobe dans le MEME dossier (2026-11-17)
+
+`--download-sections` a besoin des deux binaires. Sur cette machine `ffmpeg`
+resolu est celui d'`imageio-ffmpeg` (sans `ffprobe`) : passer ce seul dossier a
+`--ffmpeg-location` produit « ffmpeg is not installed », message faux. **Corrige** :
+`ffmpeg_bin.tools_dir()` ne rend qu'un dossier qui contient les deux, et
+`run_all.download_segment` le passe a yt-dlp.
+
 ### Restent ouverts
 | # | Constat | Note |
 |---|---|---|
 | L5 | fixture sans MP4 | utiliser un vrai VOD ou `--look-dir` |
-| L8 | codex jamais applique | PR4 |
-| L12 | watermark jete | PR4 |
 
-Corriges : **L9** et **L10** en PR2, **L11** en PR1, **L3** et **L6** en PR1.
+Corriges : **L9** et **L10** en PR2, **L11** en PR1, **L3** et **L6** en PR1,
+**L8** et **L12** en PR4, **L14** et **L15** en PR4.
 
 Reattribues hors de cette branche : **M1** (titres haches) et **M2**
 (`directive_path` local) sont des defauts du **pack**, donc PERTURABO.

@@ -31,11 +31,18 @@ npm ci || npm install
 node render_pictor.mjs \
   --manifest ../../BRIDGE/OUT/pur_manifest.json \
   --clips ../../F00_SOURCE/OUT \
+  --watermarks ../../BRIDGE/IN \
   --out ../../F01_LOOK/OUT
 ```
 
 `--entry N` pour un seul asset. `--dry-run` verifie G0-S / P-ZOOM ZERO sans
 lancer Remotion.
+
+`--watermarks <dir>` : dossier qui contient le PNG declare par le pack
+(`watermark.file`). Le fichier est copie dans `public/watermark/` puis
+reference par le manifeste. **Si le pack dit `required: true` et que le PNG
+manque, le rendu est refuse** (porte P3) : un MP4 sans logo ne doit pas sortir
+en silence.
 
 `npm install` est un prerequis dur (AUDIT_V1 **L2**). Sur cette machine :
 `env -u npm_config_allow_scripts npm install` (AUDIT_V1 **L7**).
@@ -48,7 +55,7 @@ lancer Remotion.
 | taille/place de la video claire (`fg_scale`, `fg_y_pct`) | `manifest.style_params` |
 | texte du titre | **pack** (`copywriting.overlay_title`) |
 | apparence du titre (taille, place, couleurs, contour, fond, auto_fit) | `manifest.narrative.overlay.style_params` |
-| logo / watermark PNG | `manifest.narrative.logo` + fichier du pack (`watermark.file`) |
+| logo / watermark PNG | `manifest.narrative.logo` + fichier du pack (`watermark.file`), copie par `--watermarks <dir>` |
 
 ## Interdits
 

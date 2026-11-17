@@ -31,8 +31,12 @@ pack (`copywriting.overlay_title`) — c'est la matiere PERTURABO.
 - Le **PNG** vient du pack : `watermark.file`. Le pack declare
   `required: true` — un clip sans logo est un pack fautif, pas un choix.
 - La **place, la taille, l'opacite** viennent de `codex_render.logo`.
-- Il est dessine par `F01_LOOK` (calque logo Remotion). Il ne passe **jamais**
-  en post-prod.
+- Il est dessine par `F01_LOOK` (calque logo Remotion `LogoOverlay`). Il ne
+  passe **jamais** en post-prod.
+- Depuis PR4, la chaine le transporte vraiment : le PNG suit
+  `pack.watermark` -> `convert_pur_pack.mjs` -> `narrative.logo` du manifeste ->
+  `render_pictor.mjs --watermarks`. Si le PNG manque alors que le pack dit
+  `required: true`, le rendu est **refuse** (porte P3).
 
 ## Mecanismes portes depuis le salvage
 
@@ -86,5 +90,10 @@ Refus automatiques :
   (`{style_pack: {titles, watermark, look}}`) sous le nom `codex.json` :
   `tools/codex.py check` le refuse, et c'est voulu — ce n'est pas un codex.
   La review ecrira les deux vrais codex en **PR6** (`codex_write.yml`).
-- L'ancien `REVIEW/codex.json` unique reste ignore par git tant que
-  `run_all.py` le lit (W1). Il disparait en **PR4**.
+- ~~L'ancien `REVIEW/codex.json` unique~~ : `run_all.py` ne le lit plus
+  (PR4). W1 porte sur `codex_render.json` ; `--review` reste accepte mais
+  ignore, il disparait en PR5/PR6.
+- **Signature** : les deux codex commites portent `validated_by_magos: true`
+  pour que la CI puisse rendre. Tant que `codex_write.yml` (PR6) n'existe pas,
+  cette valeur est posee **a la main** : c'est l'operateur qui la pose apres
+  revue, pas un validateur. La mettre a `false` ferme la porte W1-R/PP1.

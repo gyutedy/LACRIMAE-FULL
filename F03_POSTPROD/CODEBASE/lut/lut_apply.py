@@ -3,6 +3,9 @@
 import argparse, subprocess, sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools"))
+from ffmpeg_bin import FFMPEG, FFPROBE  # noqa: E402  (AUDIT_V1 L10)
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", type=Path, required=True)
@@ -13,10 +16,10 @@ def main() -> int:
     args = ap.parse_args()
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    probe = subprocess.run(["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+    probe = subprocess.run([FFPROBE, "-v", "quiet", "-show_entries", "format=duration",
                             "-of", "csv=p=0", str(args.input)], capture_output=True, text=True)
     dur = float(probe.stdout.strip() or 0)
-    audio = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a:0",
+    audio = subprocess.run([FFPROBE, "-v", "error", "-select_streams", "a:0",
                             "-show_entries", "stream=index", "-of", "csv=p=0", str(args.input)],
                            capture_output=True, text=True)
     filters = []
@@ -31,7 +34,7 @@ def main() -> int:
     else:
         filters.append(f"eq=brightness=-0.15:enable='gte(t,{fade_st:.3f})'")
     vf = ",".join(filters)
-    cmd = ["ffmpeg", "-y", "-i", str(args.input), "-vf", vf]
+    cmd = [FFMPEG, "-y", "-i", str(args.input), "-vf", vf]
     if (audio.stdout or "").strip():
         cmd += ["-c:a", "copy"]
     else:

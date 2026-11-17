@@ -130,6 +130,13 @@ def main():
             log("ADAPTER FAIL: %s" % e)
         return 2
 
+    # P3 : un pack qui exige un watermark doit nommer son PNG, sinon le moteur
+    # ne peut rien dessiner et le MP4 sort nu sans que rien ne le signale.
+    wm = pack.get("watermark") or {}
+    if wm.get("required") is True and not str(wm.get("file") or "").strip():
+        log("ADAPTER FAIL: watermark.required=true mais watermark.file vide (P3)")
+        return 2
+
     assets = pack.get("assets") or []
     enriched, action = with_vod(pack, args.vod_url)
 

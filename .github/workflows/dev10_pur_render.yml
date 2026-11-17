@@ -17,6 +17,10 @@ on:
         description: "URL raw du pack (recommande). Vide = utilise pack_filter."
         required: false
         default: ""
+      codex_render_url:
+        description: "URL raw du codex render (defaut : REVIEW/codex_render.json committe)"
+        required: false
+        default: ""
       vod_url:
         description: "VOD source, seulement si le pack n a pas source.vod_url"
         required: false
@@ -165,7 +169,81 @@ jobs:
             echo "aucun pack MARK1 : packs PUR utilises tels quels"
           fi
           ls -la BRIDGE/IN
-      - name: Convert pack (G0-S + packs mono-clip)
+      - name: Codex render (W1-R : le codex commande)
+        env:
+          CODEX_URL: ${{ github.event.inputs.codex_render_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${CODEX_URL:-}" ]; then
+            python3 - <<'PY'
+          import os, urllib.request
+          from pathlib import Path
+          url = os.environ["CODEX_URL"].strip()
+          req = urllib.request.Request(url, headers={
+              "User-Agent": "LACRIMAE",
+              "Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN','')}",
+          })
+          data = urllib.request.urlopen(req, timeout=120).read()
+          Path("REVIEW/codex_render.json").write_bytes(data)
+          print("codex render recupere :", url, f"({len(data)} o)")
+          PY
+          else
+            echo "codex render : REVIEW/codex_render.json committe"
+          fi
+          python3 tools/codex.py check REVIEW/codex_render.json --gate
+          python3 - <<'PY'
+          import json
+          c = json.load(open("REVIEW/codex_render.json", encoding="utf-8"))
+          print("  style :", c["style"], "| canvas :", c["canvas"], c["fps"], "fps")
+          print("  titre :", c["title"])
+          print("  logo  :", c["logo"])
+          PY
+      - name: Watermark PNG (pack -> BRIDGE/IN)
+        env:
+          PERTURABO_REPO: ${{ github.event.inputs.perturabo_repo }}
+          PERTURABO_BRANCH: ${{ github.event.inputs.perturabo_branch }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.request
+          from pathlib import Path
+
+          repo = os.environ.get("PERTURABO_REPO") or "gyutedy/PERTURABO"
+          branch = os.environ.get("PERTURABO_BRANCH") or "pari-forge-perturabo-xs4c"
+          base = f"https://raw.githubusercontent.com/{repo}/{branch}/MONDES_FORGES/CLIPPING/EXPORT"
+          headers = {"User-Agent": "LACRIMAE"}
+          if os.environ.get("GITHUB_TOKEN"):
+              headers["Authorization"] = f"Bearer {os.environ['GITHUB_TOKEN']}"
+
+          wanted = {}
+          for p in sorted(Path("BRIDGE/IN").glob("production_pack_*.json")):
+              pack = json.loads(p.read_text(encoding="utf-8"))
+              wm = pack.get("watermark") or {}
+              f = str(wm.get("file") or "").strip()
+              if f:
+                  wanted[f] = wm.get("required") is True
+              elif wm.get("required") is True:
+                  raise SystemExit("P3 : watermark requis mais watermark.file vide dans " + p.name)
+
+          for name, required in wanted.items():
+              dest = Path("BRIDGE/IN") / name
+              if dest.is_file():
+                  print("watermark deja present :", name)
+                  continue
+              try:
+                  req = urllib.request.Request(f"{base}/{name}", headers=headers)
+                  data = urllib.request.urlopen(req, timeout=120).read()
+              except Exception as exc:
+                  raise SystemExit(f"watermark {name} introuvable dans {repo}:{branch} ({exc})")
+              dest.write_bytes(data)
+              print("watermark recupere :", name, f"({len(data)} o)")
+          if not wanted:
+              print("aucun watermark declare dans les packs")
+          PY
+          ls -la BRIDGE/IN
+      - name: Convert pack (G0-S + packs mono-clip, codex_render)
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -179,8 +257,17 @@ jobs:
             --packs "$JOIN" \
             --out BRIDGE/OUT/pur_manifest.json \
             --packs-out BRIDGE/PUR \
+            --codex-render REVIEW/codex_render.json \
             --canvas "${{ github.event.inputs.canvas }}" \
             --style "${{ github.event.inputs.style }}"
+          python3 - <<'PY'
+          import json
+          m = json.load(open("BRIDGE/OUT/pur_manifest.json", encoding="utf-8"))
+          logo = (m.get("narrative") or {}).get("logo") or {}
+          if not logo.get("enabled"):
+              raise SystemExit("codex/logo : logo.enabled=false — le pack exige un watermark")
+          print("logo :", logo.get("src"), logo.get("position"), str(logo.get("width_pct")) + "%")
+          PY
       - name: Build matrix (1 angle = 1 pack mono-clip = 1 job)
         id: matrix
         run: |
@@ -252,6 +339,7 @@ jobs:
           find RUNNER_TEMP/prepare -name 'production_pack_pur_*.json' \
             -exec cp -f {} BRIDGE/PUR/ \;
           find RUNNER_TEMP/prepare -name 'pur_manifest.json' -exec cp -f {} BRIDGE/OUT/ \;
+          find RUNNER_TEMP/prepare -name '*.png' -exec cp -f {} BRIDGE/IN/ \;
           ls -la BRIDGE/IN BRIDGE/PUR BRIDGE/OUT
       - name: F00_SOURCE segment
         run: |
@@ -271,6 +359,7 @@ jobs:
             --manifest ../../BRIDGE/OUT/pur_manifest.json \
             --clips ../../F00_SOURCE/OUT \
             --out ../../F01_LOOK/OUT \
+            --watermarks ../../BRIDGE/IN \
             --entry ${{ matrix.index }}
       - name: Verifie le MP4 sorti
         run: |

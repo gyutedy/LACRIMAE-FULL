@@ -38,11 +38,20 @@ POSTPROD_CODEX = ROOT / "REVIEW" / "codex_postprod.json"
 
 
 def render_sample() -> dict:
-    return json.loads(RENDER_CODEX.read_text(encoding="utf-8"))
+    """Exemple non valide : les portes W1-R/PP1 doivent refuser.
+
+    Le codex committe peut etre signe (validated_by_magos=true) : on force donc
+    la valeur ici, sinon les tests dependraient de l'etat de signature du jour.
+    """
+    raw = json.loads(RENDER_CODEX.read_text(encoding="utf-8"))
+    raw["validated_by_magos"] = False
+    return raw
 
 
 def postprod_sample() -> dict:
-    return json.loads(POSTPROD_CODEX.read_text(encoding="utf-8"))
+    raw = json.loads(POSTPROD_CODEX.read_text(encoding="utf-8"))
+    raw["validated_by_magos"] = False
+    return raw
 
 
 class TestCommittedCodex(unittest.TestCase):

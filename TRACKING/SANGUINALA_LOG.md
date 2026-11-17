@@ -257,8 +257,36 @@ glow qui n'a pas de mode -> scene).
 - Rien ne consomme encore les codex : c'est **PR4** (BRIDGE projette le codex
   render dans le manifeste ; `run_all` remplace son W1 sur `codex.json`).
 
-Prochaine etape : **PR4** — le moteur applique `codex_render.json` :
-l'adapter + le converter relancent `watermark` (L12), `apply_look_blur`
-disparait, `LogoOverlay` (dev8) remonte dans `_purPackComposition.jsx`, et
-`run_all` appelle l'orchestrateur Remotion `F01_MJS` a la place du flou a la
-main.
+Prochaine etape : **PR5** — post-prod applique `codex_postprod.json` et
+inverse l'ordre `GLOW -> CAPTION`.
+
+## PR4 — le codex commande le moteur (2026-11-17)
+
+Le codex n'est plus un fichier decoratif : il traverse jusqu'au MP4.
+
+- `convert_pur_pack.mjs --codex-render` projette le codex dans le manifeste :
+  `style`, `style_params` (`look`), `narrative.overlay.style_params` (`title`),
+  `narrative.logo` (`logo` + PNG du pack). Le codex refuse si
+  `validated_by_magos != true` (exit 2) et si le schema n'est pas
+  `sanguinala.render.codex.v1`.
+- `bridgeClipper.js` : `buildPurLogo()` (PNG du pack par defaut, codex
+  par-dessus), `pur.watermark` conserve. L12 ferme cote parse.
+- `render_pictor.mjs` : `--watermarks <dir>` copie le PNG dans
+  `public/watermark/` et **refuse de rendre** s'il manque alors que le pack dit
+  `required: true` ; Remotion est appele par node (plus `npx`, cf. L14).
+- `_purPackComposition.jsx` : `LogoOverlay` + `getLogoPosition` portes du
+  salvage dev8 (7 positions + custom), z-index au-dessus du titre.
+- `run_all.py` : `apply_look_blur` **supprime** ; le pipeline passe par
+  `build_manifest()` puis `render_look()` ; W1 devient `gate_w1r`
+  (`codex_render.json`) ; `segment_of()` lit les bornes MARK1 a plat comme
+  `montage_instructions.segment` (sinon 0-2 s pour un pack MARK1) ; le clip
+  source s'appelle `pur_<angle>.mp4` et le look `pur_<angle>_look.mp4`.
+- Workflow : etape codex (`--gate`) + etape watermark (PNG recupere depuis
+  l'EXPORT PERTURABO, refus si introuvable), `--codex-render` et `--watermarks`
+  transmis ; les PNG sont restaures dans les jobs `render`.
+- `lut_apply.py` et `f00_pur.py` passent par `ffmpeg_bin` (L10 avait laisse
+  deux trous) ; `download_segment` donne a yt-dlp le dossier qui contient
+  ffmpeg **et** ffprobe (L15).
+- Verifie localement : pack MARK1 3 clips -> 3 livrables `OUT/A0*.mp4`,
+  `G-PACK OK`. Mesure du logo dans le livrable : 14,8 % de la largeur (codex
+  15 %), centre (540, 960) sur 1080x1920.
