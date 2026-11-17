@@ -24,7 +24,7 @@ pack PUR
 | **G4 CAPTION** | POST-PROD | F07 PREVIEW s1 (`caption/OUT/style.json`) ; overlay Whisper/Blender = runtime |
 | **GL1 / GL2** | POST-PROD | sigma 4–30, opacite <= 0,6 ; preview frame avant batch |
 | **L1 / F1** | POST-PROD | .cube existe si LUT ; fade/darken vers la fin |
-| **W1 REVIEW** | F03_PREVIEW AVANT moteur | clic, double-clic, images pack → `REVIEW/sanguinala_review.json` |
+| **W1 REVIEW** | F03_PREVIEW AVANT moteur | clic, double-clic, images pack → `REVIEW/codex.json` |
 | **T1 TITRES** | F03_PREVIEW → rendu | titres pack affiches, appliques a N clips |
 | **G-PACK** | POST-PROD | meme style_pack sur N clips |
 | **G6 LIVRABLE** | F05/F06 | H.264 yuv420p faststart, N MP4 = N assets |

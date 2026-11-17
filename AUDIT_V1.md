@@ -105,7 +105,7 @@ de `run_all.py`, ou `hide` des caractères non-ASCII des logs.
 `node_modules/` n'existe pas. **Prérequis** : `npm install` dans
 `F01_LOOK/CODEBASE` avant tout rendu (`render_pictor.mjs`).
 
-### L3. `REVIEW/sanguinala_review.json` absent
+### L3. `REVIEW/codex.json` absent
 
 `REVIEW/` ne contient que `README.md` + `.gitkeep`. Le code **tolère**
 l'absence (`W1 REVIEW: JSON absent — titres/watermark pack bruts`), donc le

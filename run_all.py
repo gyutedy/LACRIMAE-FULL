@@ -40,7 +40,7 @@ CAPTION_SCHEMA = ROOT / "F03_POSTPROD" / "CODEBASE" / "caption" / "TRAVAIL" / "C
 CAPTION_STYLE = ROOT / "F03_POSTPROD" / "CODEBASE" / "caption" / "OUT" / "style.json"
 CAPTION_PREVIEW = ROOT / "F03_POSTPROD" / "CODEBASE" / "caption" / "PREVIEW" / "CODEBASE"
 F03_PREVIEW = ROOT / "F03_PREVIEW" / "CODEBASE"
-REVIEW_JSON = ROOT / "REVIEW" / "sanguinala_review.json"
+REVIEW_JSON = ROOT / "REVIEW" / "codex.json"
 
 
 def log(msg: str) -> None:
@@ -265,7 +265,7 @@ def gate_w1_t1(style_pack: dict, review_path: Path, require_preview: bool) -> in
             log("T1 TITRES: aucun titre dans review/pack")
         return 0
     if require_preview:
-        log("W1 REVIEW FAIL: F03_PREVIEW non validee (REVIEW/sanguinala_review.json absent)")
+        log("W1 REVIEW FAIL: F03_PREVIEW non validee (REVIEW/codex.json absent)")
         return 2
     log("W1 REVIEW: JSON absent — titres/watermark pack bruts (preview non validee)")
     if style_pack.get("titles"):
@@ -461,7 +461,7 @@ def main() -> int:
                 log("PREVIEW STAGE OK: F07 PREVIEW public/target.mp4")
                 log("Operateur: cd F03_PREVIEW/CODEBASE && npm ci && npm run dev   (port 5174)")
                 log("Operateur: cd F03_POSTPROD/CODEBASE/caption/PREVIEW/CODEBASE && npm ci && npm run dev   (port 5173)")
-                log("Valider: Export JSON review -> REVIEW/sanguinala_review.json")
+                log("Valider: Export JSON review -> REVIEW/codex.json")
                 log("Valider: Save s1 -> F03_POSTPROD/CODEBASE/caption/OUT/style.json")
                 log("Puis relancer run_all SANS --preview-stage")
                 return 0

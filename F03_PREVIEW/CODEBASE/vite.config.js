@@ -5,7 +5,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const reviewOut = resolve(here, '../../REVIEW/sanguinala_review.json')
+const reviewOut = resolve(here, '../../REVIEW/codex.json')
 
 function saveReviewMiddleware(req, res, next) {
   const path = (req.url || '').split('?')[0]
@@ -23,7 +23,7 @@ function saveReviewMiddleware(req, res, next) {
       writeFileSync(reviewOut, raw.endsWith('\n') ? raw : `${raw}\n`, 'utf8')
       res.statusCode = 200
       res.setHeader('Content-Type', 'application/json')
-      res.end(JSON.stringify({ ok: true, path: 'REVIEW/sanguinala_review.json' }))
+      res.end(JSON.stringify({ ok: true, path: 'REVIEW/codex.json' }))
     } catch (err) {
       res.statusCode = 400
       res.setHeader('Content-Type', 'application/json')

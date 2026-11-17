@@ -13,8 +13,8 @@ Mecanismes portes depuis salvage **par copie** (CDC §7.4), pas de reecriture, p
 | Taille video claire blur (`fg_scale`) | LOOK `_purPackComposition` + slider App | idem |
 | Titres editables (`style_pack.titles`) | `review_dev8` panneau texte | idem |
 | Watermark images pack | lecture JSON au drop pack | idem |
-| Export JSON review unique | bouton `sanguinala_review.json` | idem |
+| Export JSON review unique | bouton `codex.json` | idem |
 
 Src complete non fusionnee (hybrid/reveal/ranking) : `TRACKING/SALVAGE/review_dev8/` — ne pas la coller par-dessus le LOOK.
 
-`run_all.py` lit `REVIEW/sanguinala_review.json` AVANT le moteur (W1/T1). Fichier jamais commite (gitignore). `--require-previews` = FAIL si absent.
+`run_all.py` lit `REVIEW/codex.json` AVANT le moteur (W1/T1). Fichier jamais commite (gitignore). `--require-previews` = FAIL si absent.

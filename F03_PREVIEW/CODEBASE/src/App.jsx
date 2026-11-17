@@ -292,7 +292,7 @@ export default function App() {
     const blob = new Blob([text], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'sanguinala_review.json';
+    a.download = 'codex.json';
     a.click();
     try {
       const res = await fetch('/api/save-review', {

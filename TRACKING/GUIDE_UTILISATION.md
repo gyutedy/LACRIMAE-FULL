@@ -7,7 +7,7 @@ Tu ne touches ni au code ni au pack.
 ## Ordre operateur (CDC §8)
 
 1. Pack PUR (PERTURABO ou fixture).
-2. **F03_PREVIEW** (AVANT le moteur) : look blur (`fg_scale` taille video claire) + titres T1 editables + watermark W1 curseur (double-clic puis glisser). Export `REVIEW/sanguinala_review.json` (l'ancien codex).
+2. **F03_PREVIEW** (AVANT le moteur) : look blur (`fg_scale` taille video claire) + titres T1 editables + watermark W1 curseur (double-clic puis glisser). Export `REVIEW/codex.json` (l'ancien codex).
 3. **F07 CAPTION PREVIEW** : police / taille / place s1. Save `F03_POSTPROD/CODEBASE/caption/OUT/style.json`.
 4. **Preview GLOW** : 1 frame PNG (sigma / opacite). Deja dans run_all (GL2).
 5. Relancer `run_all` : N MP4.

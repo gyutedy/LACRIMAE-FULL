@@ -12,11 +12,11 @@ Mecanismes portes depuis salvage `review_dev8` **par copie de handlers** (CDC §
 - blur `fg_scale` / `fg_y_pct` / `degree` / `bg_scale` (taille de la video claire)
 - W1 double-clic pose logo + **curseur** (glisser le watermark)
 - W1 images watermark du pack JSON
-- Export JSON review unique (`REVIEW/sanguinala_review.json`) applique a N clips
+- Export JSON review unique (`REVIEW/codex.json`) applique a N clips
 
 Src complete non fusionnee : `TRACKING/SALVAGE/review_dev8/` — ne pas la coller par-dessus le LOOK.
 
-IN : pack PUR json (`public/pack.json` stage par `run_all --preview-stage`). OUT : `REVIEW/sanguinala_review.json` (ancien codex). Pack jamais edite.
+IN : pack PUR json (`public/pack.json` stage par `run_all --preview-stage`). OUT : `REVIEW/codex.json` (ancien codex). Pack jamais edite.
 
 ```bash
 python3 run_all.py --pack <pack.json> --work WORK --out OUT --preview-stage

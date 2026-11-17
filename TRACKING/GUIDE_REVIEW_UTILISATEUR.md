@@ -28,7 +28,7 @@ F03_PREVIEW (vite, port 5174)              <-- TOI, ICI
         │  tu regles titres / watermark / look
         │  tu cliques "Enregistrer review" (W1)
         ▼
-REVIEW/sanguinala_review.json              (jamais commite)
+REVIEW/codex.json              (jamais commite)
         │
         │  run_all.py
         ▼
@@ -75,8 +75,8 @@ l'overlay `She lost 50,000 dollars`.
 ## Enregistrer
 
 Bouton **Enregistrer review** -> ecrit deux fois :
-1. telechargement `sanguinala_review.json`
-2. ecriture directe dans `REVIEW/sanguinala_review.json`
+1. telechargement `codex.json`
+2. ecriture directe dans `REVIEW/codex.json`
    (via `/api/save-review`, verifie : HTTP 200 le 2026-11-16)
 
 Si l'ecriture directe echoue, un message s'affiche : `W1: save review
@@ -90,7 +90,7 @@ python run_all.py --pack REVIEW/packs/production_pack_pur_e99bd523_A01.json \
     --work WORK --out OUT
 ```
 
-La porte W1 lit `REVIEW/sanguinala_review.json` et applique tes titres.
+La porte W1 lit `REVIEW/codex.json` et applique tes titres.
 Sans ce fichier, `W1 REVIEW: JSON absent — titres/watermark pack bruts`
 (voir AUDIT_V1 constat L3).
 
