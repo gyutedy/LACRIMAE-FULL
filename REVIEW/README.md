@@ -56,3 +56,35 @@ Le src complet du salvage (hybrid / reveal / ranking) reste dans
 `codex_postprod.json` **avant** la post-prod (PP1). Un codex absent, invalide,
 ou avec `validated_by_magos: false` ⇒ **rendu refuse**. `--require-previews`
 force le FAIL au lieu de tolerer.
+
+## Le contrat est executable
+
+Les schemas sont dans `REVIEW/SCHEMAS/` et **un seul endroit les applique** :
+`tools/codex.py`. Pas de dependance externe (validateur minimal integre).
+
+```bash
+python tools/codex.py check REVIEW/codex_render.json          # schema + doctrine
+python tools/codex.py check REVIEW/codex_postprod.json --gate  # + porte PP1
+python -m unittest tools.test_codex -v                         # 20 tests
+```
+
+Codes de sortie : `0` valide, `1` invalide (le message nomme le chemin exact,
+`$.title.line1_color: ...`), `2` valide mais **non valide par l'operateur**.
+
+Refus automatiques :
+
+- champ obligatoire absent, cle inconnue (`additionalProperties: false`),
+  valeur hors bornes, couleur non hexa ;
+- **toute cle de texte** (`text`, `overlay_title`, `titles`, `lines`,
+  `content`, ...) — le codex porte le style, le pack porte le texte ;
+- `order` post-prod autre que `glow → caption → lut → fade` (PP2) ;
+- `validated_by_magos` different de `true` quand la porte est demandee.
+
+## Etat transitoire (PR3 → PR6)
+
+- Le bouton **Export** de `F03_PREVIEW` produit encore l'**ancien** format
+  (`{style_pack: {titles, watermark, look}}`) sous le nom `codex.json` :
+  `tools/codex.py check` le refuse, et c'est voulu — ce n'est pas un codex.
+  La review ecrira les deux vrais codex en **PR6** (`codex_write.yml`).
+- L'ancien `REVIEW/codex.json` unique reste ignore par git tant que
+  `run_all.py` le lit (W1). Il disparait en **PR4**.

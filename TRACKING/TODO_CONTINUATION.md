@@ -44,15 +44,15 @@ branchement du moteur sur le codex, la survie du watermark, et la route CI.
 |---|---|---|
 | PR1 | docs vraies (ce fichier + 9 docs + `PLAN_CODEX_V1.md`) | FAIT |
 | PR2 | route Actions reparee + `ffmpeg` dans le PATH du job | **fait** |
-| PR3 | contrat des 2 codex (schemas, normaliseurs, tests, `.gitignore`) | a faire |
+| PR3 | contrat des 2 codex (schemas, normaliseurs, tests, `.gitignore`) | **fait** |
 | PR4 | le moteur applique `codex_render` (Remotion branche, logo, watermark propage) | a faire |
 | PR5 | post-prod applique `codex_postprod` + inversion `GLOW -> CAPTION` | a faire |
 | PR6 | review en ligne ecrit les 2 codex (`codex_write.yml`) | a faire |
 
-Prochain pas concret : **PR3** (contrat des deux codex). La route CI est
-reparee et testee en local jusqu'a `pur_aggregate`, mais elle n'a jamais
-tourne sur GitHub sur un vrai VOD : ce premier run reel appartient a PR4, une
-fois le moteur branche sur `codex_render`.
+Prochain pas concret : **PR4** — le moteur applique `codex_render.json`. Le
+contrat existe et il est executable (`tools/codex.py`), mais rien ne le lit
+encore au moment de rendre : aujourd'hui le style vient de `--style blur` en
+dur et le logo du pack n'atteint pas le MP4 (L12).
 
 ## 4. Ce qui n'appartient PAS a cette branche
 

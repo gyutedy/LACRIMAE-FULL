@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gyutedy.github.io/LACRIMAE-FULL/schemas/codex_postprod.schema.json",
+  "title": "sanguinala.postprod.codex.v1",
+  "description": "Codex POSTPROD : il commande le glow et les sous-titres. Ordre grave (PP2) : glow -> caption -> lut -> fade. Les sous-titres ne sont jamais floutes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "order", "caption", "glow", "lut", "fade_out", "validated_by_magos"],
+  "properties": {
+    "schema_version": { "const": "sanguinala.postprod.codex.v1" },
+    "pack_token": { "type": "string", "minLength": 1 },
+    "order": {
+      "const": ["glow", "caption", "lut", "fade"],
+      "description": "Porte PP2 : cet ordre est grave. GLOW avant CAPTION, sinon les sous-titres sont floutes."
+    },
+    "caption": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Schema dev11.caption.style.v1 (F03_POSTPROD/CODEBASE/caption/PREVIEW/CODEBASE/src/styleSchema.js).",
+      "required": [
+        "schema_version", "id", "font", "position", "size", "color",
+        "outline", "glow", "motion", "motion_speed", "canvas"
+      ],
+      "properties": {
+        "schema_version": { "const": "dev11.caption.style.v1" },
+        "id": { "type": "string", "minLength": 1 },
+        "font": { "type": "string", "minLength": 1 },
+        "position": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x_pct", "y_pct"],
+          "properties": {
+            "x_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+            "y_pct": { "type": "number", "minimum": 0, "maximum": 100 }
+          }
+        },
+        "size": { "type": "number", "minimum": 12, "maximum": 240 },
+        "color": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+        "outline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "color"],
+          "properties": {
+            "width": { "type": "number", "minimum": 0, "maximum": 24 },
+            "color": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" }
+          }
+        },
+        "glow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["intensity", "color"],
+          "properties": {
+            "intensity": { "type": "number", "minimum": 0, "maximum": 5 },
+            "color": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" }
+          }
+        },
+        "motion": { "enum": ["pop-in", "bounce", "slide"] },
+        "motion_speed": { "type": "number", "minimum": 0.25, "maximum": 3 },
+        "canvas": { "enum": ["9:16", "16:9", "1:1"] }
+      }
+    },
+    "glow": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Porte GL1 (glow/modal_glow.py) : sigma 4-30, opacite 0-0.6.",
+      "required": ["enabled", "sigma", "opacity"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "mode": { "enum": ["scene", "subject"] },
+        "sigma": { "type": "number", "minimum": 4, "maximum": 30 },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 0.6 }
+      }
+    },
+    "lut": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "profile"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "profile": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Profil de F03_POSTPROD/CODEBASE/lut/profiles/atom_ic_profiles.json (ex. hdr_imperator)."
+        }
+      }
+    },
+    "fade_out": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Fade vers la fin : obligatoire (porte F1).",
+      "required": ["mode", "duration_sec"],
+      "properties": {
+        "mode": { "enum": ["darken", "black"] },
+        "duration_sec": { "type": "number", "minimum": 0.1, "maximum": 10 }
+      }
+    },
+    "validated_by_magos": {
+      "type": "boolean",
+      "description": "Porte PP1 : false = aucune post-prod n'est lancee."
+    }
+  }
+}

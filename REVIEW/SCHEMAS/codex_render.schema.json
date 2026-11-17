@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gyutedy.github.io/LACRIMAE-FULL/schemas/codex_render.schema.json",
+  "title": "sanguinala.render.codex.v1",
+  "description": "Codex RENDER : il commande le moteur (F01_LOOK/Remotion). Il porte le STYLE, jamais le texte d'un titre : le texte vient du pack.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "canvas", "fps", "style", "look", "title", "logo", "validated_by_magos"],
+  "properties": {
+    "schema_version": { "const": "sanguinala.render.codex.v1" },
+    "pack_token": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Token du pack vise (informatif : le pack reste la source de verite)."
+    },
+    "canvas": { "enum": ["9:16", "16:9", "1:1"] },
+    "fps": { "type": "integer", "minimum": 1, "maximum": 120 },
+    "style": {
+      "enum": ["blur", "reframing"],
+      "description": "G0-S : blur | reframing. split_scene = V2+. Style infere = refus."
+    },
+    "look": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["degree", "bg_scale", "fg_scale", "fg_y_pct"],
+      "properties": {
+        "degree": { "type": "number", "minimum": 0, "maximum": 120, "description": "Intensite du flou du fond." },
+        "bg_scale": { "type": "number", "minimum": 100, "maximum": 300, "description": "Echelle du fond floute, en pourcentage." },
+        "fg_scale": { "type": "number", "minimum": 10, "maximum": 100, "description": "Echelle de la video claire, en pourcentage." },
+        "fg_y_pct": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "title": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Apparence du titre. Aucun texte ici : le texte vient du pack (copywriting.overlay_title).",
+      "required": [
+        "size", "x_pct", "y_pct", "line1_color", "line2_color", "font_family",
+        "uppercase", "outline_width", "outline_color", "bg_enabled", "bg_color",
+        "bg_opacity", "box_radius", "box_padding", "auto_fit", "min_size"
+      ],
+      "properties": {
+        "size": { "type": "number", "minimum": 8, "maximum": 200 },
+        "x_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "y_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "line1_color": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+        "line2_color": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+        "font_family": { "type": "string", "minLength": 1 },
+        "uppercase": { "type": "boolean" },
+        "outline_width": { "type": "number", "minimum": 0, "maximum": 40 },
+        "outline_color": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+        "bg_enabled": { "type": "boolean" },
+        "bg_color": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+        "bg_opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "box_radius": { "type": "number", "minimum": 0, "maximum": 100 },
+        "box_padding": { "type": "number", "minimum": 0, "maximum": 100 },
+        "auto_fit": { "type": "boolean" },
+        "min_size": { "type": "number", "minimum": 8, "maximum": 200 }
+      }
+    },
+    "logo": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Watermark : le PNG vient du pack (watermark.file), la place et la taille du codex. Dessine par le moteur, jamais en post-prod.",
+      "required": ["enabled", "width_pct", "position", "opacity"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "width_pct": { "type": "number", "minimum": 1, "maximum": 60, "description": "Largeur du logo, en pourcentage de la largeur du canvas." },
+        "position": {
+          "enum": [
+            "top_left", "top_center", "top_right",
+            "centered",
+            "bottom_left", "bottom_center", "bottom_right",
+            "custom"
+          ]
+        },
+        "x_pct": { "type": "number", "minimum": 0, "maximum": 100, "description": "Requis si position = custom." },
+        "y_pct": { "type": "number", "minimum": 0, "maximum": 100, "description": "Requis si position = custom." },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "validated_by_magos": {
+      "type": "boolean",
+      "description": "Porte W1-R : false = aucun rendu n'est lance."
+    }
+  }
+}

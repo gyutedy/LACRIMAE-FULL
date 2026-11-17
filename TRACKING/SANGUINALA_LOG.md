@@ -212,3 +212,53 @@ ne peut pas mesurer). Les clips V1 font 30 s.
 
 Prochaine etape : **PR3** — contrat des deux codex (schemas, normaliseurs,
 validation, sortie du `.gitignore`, tests).
+
+## 2026-11-17 — PR3 : le contrat des deux codex devient executable
+
+### Ce qui existe desormais dans le depot
+
+| Fichier | Role |
+|---|---|
+| `REVIEW/codex_render.json` | codex render **commite** (schema `sanguinala.render.codex.v1`), exemple complet avec les valeurs qui reproduisent le look actuel (degree 15, bg 118 %, fg 57 %, defaults `PUR_OVERLAY_DEFAULTS` pour le titre, logo 15 % centre opacite 0.8) |
+| `REVIEW/codex_postprod.json` | codex postprod **commite** (schema `sanguinala.postprod.codex.v1`), `order` fige, caption s1 (`dev11.caption.style.v1` = `DEFAULT_STYLE` de `styleSchema.js`), glow GL1, lut profil `hdr_imperator`, fade `darken` 1.5 s |
+| `REVIEW/SCHEMAS/codex_render.schema.json` | verite unique, `additionalProperties: false` partout |
+| `REVIEW/SCHEMAS/codex_postprod.schema.json` | idem |
+| `tools/codex.py` | validateur minimal (aucune dependance) + doctrine + portes W1-R / PP1 / PP2 + CLI `check` |
+| `tools/test_codex.py` | 20 tests `unittest` |
+
+Les deux commites dans git : `git check-ignore` ne les voit pas. L'ancien
+`REVIEW/codex.json` unique reste ignore et disparait en PR4.
+
+### Ce que le validateur refuse
+
+- champ obligatoire absent, cle inconnue (strict partout), valeur hors bornes
+  (glow `sigma` 4-30, opacite <= 0.6, LUT au schema), couleur non hexa ;
+- **toute cle de texte** (`text`, `overlay_title`, `titles`, `lines`,
+  `content`, et leurs formes imbriquees) : doctrine « le codex porte le
+  style, le pack porte le texte » ;
+- `order` post-prod != `[glow, caption, lut, fade]` (PP2) ;
+- `validated_by_magos` != `true` quand la porte est demandee (exit 2).
+
+### Verification
+
+`python -m unittest tools.test_codex` : 20/20 verts. CLI :
+`check codex_render.json` -> 0 + avertissement W1-R ; `--gate` -> 2.
+Cas demontres par les tests : champ manquant refuse avec le chemin exact,
+`split_scene` refuse (V2+), cle inconnue `zoom` refuse, texte imbrique
+`$.title.overlay_title` refuse, ordre inverti refuse, normalisation qui
+n'invente rien sauf les defauts declares (logo custom -> x_pct/y_pct 50,
+glow qui n'a pas de mode -> scene).
+
+### Transitoire (assume, documente dans REVIEW/README.md)
+
+- Le bouton Export de `F03_PREVIEW` produit encore l'ancien format
+  (`style_pack.titles/watermark/look`) : le validateur le refuse, et c'est
+  voulu. La review ecrira les deux vrais codex en **PR6** (`codex_write.yml`).
+- Rien ne consomme encore les codex : c'est **PR4** (BRIDGE projette le codex
+  render dans le manifeste ; `run_all` remplace son W1 sur `codex.json`).
+
+Prochaine etape : **PR4** — le moteur applique `codex_render.json` :
+l'adapter + le converter relancent `watermark` (L12), `apply_look_blur`
+disparait, `LogoOverlay` (dev8) remonte dans `_purPackComposition.jsx`, et
+`run_all` appelle l'orchestrateur Remotion `F01_MJS` a la place du flou a la
+main.

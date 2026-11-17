@@ -1,0 +1,40 @@
+{
+  "schema_version": "sanguinala.render.codex.v1",
+  "pack_token": "e99bd523",
+  "canvas": "9:16",
+  "fps": 30,
+  "style": "blur",
+  "look": {
+    "degree": 15,
+    "bg_scale": 118,
+    "fg_scale": 57,
+    "fg_y_pct": 50
+  },
+  "title": {
+    "size": 68,
+    "x_pct": 50,
+    "y_pct": 22,
+    "line1_color": "#FFFFFF",
+    "line2_color": "#FFD700",
+    "font_family": "Arial Black, Impact",
+    "uppercase": false,
+    "outline_width": 3,
+    "outline_color": "#000000",
+    "bg_enabled": false,
+    "bg_color": "#000000",
+    "bg_opacity": 0.65,
+    "box_radius": 10,
+    "box_padding": 14,
+    "auto_fit": true,
+    "min_size": 28
+  },
+  "logo": {
+    "enabled": true,
+    "width_pct": 15,
+    "position": "centered",
+    "x_pct": 50,
+    "y_pct": 50,
+    "opacity": 0.8
+  },
+  "validated_by_magos": false
+}
