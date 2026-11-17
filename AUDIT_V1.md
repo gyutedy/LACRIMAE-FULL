@@ -429,13 +429,46 @@ resolu est celui d'`imageio-ffmpeg` (sans `ffprobe`) : passer ce seul dossier a
 `ffmpeg_bin.tools_dir()` ne rend qu'un dossier qui contient les deux, et
 `run_all.download_segment` le passe a yt-dlp.
 
+### L16 — Le LUT du codex n'est jamais applique (2026-11-17, corrige PR5)
+
+`postprod.py` ne posait `--cube` que si `style_pack.lut.cube` existait. Or
+aucun `.cube` n'existe dans le depot (`find . -name '*.cube'` = vide) et
+`atom_ic_profiles.json` n'est **pas** un fichier LUT : ce sont des jeux de
+parametres (`chroma`, `textura`, `restaura`). Resultat : le codex disait
+`lut.enabled: true, profile: hdr_imperator` et **rien n'etait applique**, sans
+un mot dans les logs.
+
+**Corrige** : `lut_apply.py --profile <nom>` charge le profil et le traduit en
+filtres ffmpeg reels (`hqdn3d` -> `eq` -> `unsharp`). Un profil inconnu est une
+erreur (exit 2) qui liste les profils disponibles. Mesure : 98 % des pixels
+changent, contraste 19,8 -> 21,6.
+
+### L17 — Le glow ne pouvait pas tourner hors Modal (2026-11-17, corrige PR5)
+
+`glow/modal_glow.py` faisait `import modal` au niveau module : sans Modal
+installe (CI, machine locale), l'import plantait et `glow_clip` n'etait jamais
+appele. **Corrige** : import optionnel + `_NullApp` (les decorateurs restent en
+place), et le coeur ffmpeg utilise `ffmpeg_bin`. Le glow s'applique maintenant
+sur un runner Actions (CPU), sans GPU.
+
+### L18 — Les sous-titres ne sont pas graves en V1 (2026-11-17, declare)
+
+Le codex postprod porte le style `dev11.caption.style.v1` (police, taille,
+place, contour, motion), mais la gravure reelle demande une sequence PNG
+rendue par **Blender** (`caption/TRAVAIL`, runtime Modal). Aucune sequence n'est
+produite dans la route V1 : la passe CAPTION est donc **declaree non appliquee**
+(`applied: false`, raison explicite) dans `postprod_report.json`. Le style
+voyage, le rendu des sous-titres reste a brancher (V2 ou job Modal dedie).
+
 ### Restent ouverts
 | # | Constat | Note |
 |---|---|---|
 | L5 | fixture sans MP4 | utiliser un vrai VOD ou `--look-dir` |
+| L18 | sous-titres non graves | style porte par le codex, rendu Blender/Whisper a brancher |
 
 Corriges : **L9** et **L10** en PR2, **L11** en PR1, **L3** et **L6** en PR1,
-**L8** et **L12** en PR4, **L14** et **L15** en PR4.
+**L8** et **L12** en PR4, **L14** et **L15** en PR4, **L16** et **L17** en PR5.
+
 
 Reattribues hors de cette branche : **M1** (titres haches) et **M2**
 (`directive_path` local) sont des defauts du **pack**, donc PERTURABO.

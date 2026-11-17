@@ -38,6 +38,22 @@ pack (`copywriting.overlay_title`) — c'est la matiere PERTURABO.
   `render_pictor.mjs --watermarks`. Si le PNG manque alors que le pack dit
   `required: true`, le rendu est **refuse** (porte P3).
 
+## Ce que le codex postprod commande vraiment
+
+`F03_POSTPROD/CODEBASE/postprod.py` lit `codex_postprod.json` (PP1 : refuse si
+`validated_by_magos` n'est pas `true`) et applique les passes dans l'ordre grave
+`glow -> caption -> lut -> fade` (PP2, refuse sinon) :
+
+| Passe | Appliquee ? | Detail |
+|---|---|---|
+| GLOW | oui | `glow/sigma/opacity` ; la bande des sous-titres (bas 22 %) n'est jamais floutee |
+| CAPTION | **non** en V1 | le style `s1` est porte, mais la gravure demande une sequence PNG Blender ; la passe est declaree `applied: false` avec sa raison dans `postprod_report.json` |
+| LUT | oui | `lut.profile` -> filtres ffmpeg (profils ATOM-IC) ; `lut.cube` si une vraie LUT 3D est fournie |
+| FADE | oui | `fade_out.mode` / `duration_sec`, vers la fin, dans la meme passe que le LUT |
+
+Chaque run ecrit `<work>/<clip>_postprod_report.json`
+(`sanguinala.postprod.report.v1`) : aucune passe silencieuse.
+
 ## Mecanismes portes depuis le salvage
 
 Copie ciblee (CDC §7.4), jamais de collage du src complet :

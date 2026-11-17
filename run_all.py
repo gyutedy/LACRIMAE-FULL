@@ -47,6 +47,7 @@ CAPTION_PREVIEW = ROOT / "F03_POSTPROD" / "CODEBASE" / "caption" / "PREVIEW" / "
 F03_PREVIEW = ROOT / "F03_PREVIEW" / "CODEBASE"
 REVIEW_JSON = ROOT / "REVIEW" / "codex.json"
 CODEX_RENDER = ROOT / "REVIEW" / "codex_render.json"
+CODEX_POSTPROD = ROOT / "REVIEW" / "codex_postprod.json"
 CONVERT_MJS = ROOT / "tools" / "convert_pur_pack.mjs"
 RENDER_PICTOR = ROOT / "F01_LOOK" / "CODEBASE" / "render_pictor.mjs"
 
@@ -347,6 +348,41 @@ def gate_w1r(codex_path: Path, require: bool) -> int:
     return 0
 
 
+def gate_pp1(codex_path: Path, require: bool) -> tuple[int, dict | None]:
+    """PP1 : le codex postprod commande glow/sous-titres/lut/fade.
+
+    Rend (code, codex|None). Absent et non exige = mode legacy (style_pack).
+    """
+    sys.path.insert(0, str(ROOT / "tools"))
+    import codex as codex_mod
+
+    if not codex_path.is_file():
+        if require:
+            log(f"PP1 FAIL: codex postprod absent ({codex_path})")
+            return 2, None
+        log(f"PP1: codex postprod absent ({codex_path}) — style_pack du pack")
+        return 0, None
+    try:
+        loaded = codex_mod.load_postprod_codex(codex_path, require_validated=require)
+    except codex_mod.CodexError as exc:
+        log(str(exc))
+        for err in exc.errors:
+            log(f"    - {err}")
+        return exc.code, None
+    order = loaded.get("order") or []
+    log(
+        "PP1 OK: %s (ordre=%s, glow=%s, lut=%s, fade=%s)"
+        % (
+            codex_path.name,
+            "→".join(order),
+            "on" if (loaded.get("glow") or {}).get("enabled") else "off",
+            (loaded.get("lut") or {}).get("profile", "off") if (loaded.get("lut") or {}).get("enabled") else "off",
+            (loaded.get("fade_out") or {}).get("mode", "off"),
+        )
+    )
+    return 0, loaded
+
+
 def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -439,9 +475,10 @@ def main() -> int:
     ap.add_argument("--look-dir", type=Path, default=None)
     ap.add_argument("--review", type=Path, default=REVIEW_JSON, help="legacy (REVIEW/codex.json), ignore en V1")
     ap.add_argument("--codex-render", type=Path, default=CODEX_RENDER, help="codex qui commande le moteur (style, look, titre, logo)")
-    ap.add_argument("--watermarks", type=Path, default=None, help="dossier du PNG watermark (defaut : dossier du pack)")
+    ap.add_argument("--codex-postprod", type=Path, default=CODEX_POSTPROD, help="codex qui commande glow/sous-titres/lut/fade (PP1)")
     ap.add_argument("--preview-stage", action="store_true", help="clip de reference + stage F03_PREVIEW et F07 PREVIEW, stop")
     ap.add_argument("--require-previews", action="store_true", help="W1/G4 FAIL si JSON review / style.json absents")
+    ap.add_argument("--watermarks", type=Path, default=None, help="dossier du PNG watermark (defaut : dossier du pack)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -461,19 +498,38 @@ def main() -> int:
     style_pack = pack.get("style_pack") or {}
     style_pack = merge_review(style_pack, args.review)
     style_pack = merge_caption_style(style_pack)
-    log("PIPELINE: BRIDGE (codex_render) → F00_SOURCE → F01_LOOK (P2 moteur) → F02_MONTAGE → F03_POSTPROD (F07 CAPTION → GLOW → LUT → FADE) → F05 → F06")
+    log("PIPELINE: BRIDGE (codex_render) → F00_SOURCE → F01_LOOK (P2 moteur) → F02_MONTAGE → F03_POSTPROD (codex_postprod : GLOW → CAPTION → LUT → FADE) → F05 → F06")
     log(f"G-PACK: meme codex pour tous les assets ({len(items)} clips)")
     if args.dry_run:
         log("DRY-RUN: portes G0/G0-S OK, stop avant execution.")
         return 0
 
-    code = gate_w1r(args.codex_render, args.require_previews and not args.preview_stage)
+    require = args.require_previews and not args.preview_stage
+    code = gate_w1r(args.codex_render, require)
     if code:
         return code
-    code = gate_g4(style_pack, args.require_previews and not args.preview_stage)
+
+    code, codex_pp = gate_pp1(args.codex_postprod, require)
     if code:
         return code
-    code = gate_gl1(style_pack)
+    postprod_cfg = style_pack
+    if codex_pp:
+        postprod_cfg = {
+            "caption": {
+                "enabled": bool(codex_pp.get("caption")),
+                "source": "codex",
+                "s1": codex_pp.get("caption") or {},
+            },
+            "glow": codex_pp.get("glow") or {},
+            "lut": codex_pp.get("lut") or {},
+            "fade_out": {**(codex_pp.get("fade_out") or {}), "enabled": True},
+        }
+        log("G4/GL1: lus dans codex_postprod.json (le codex commande)")
+
+    code = gate_g4(postprod_cfg, require)
+    if code:
+        return code
+    code = gate_gl1(postprod_cfg)
     if code:
         return code
 
@@ -583,7 +639,18 @@ def main() -> int:
         log(f"M1 OK asset {aid}")
 
         post_out = args.work / f"{aid}_post.mp4"
-        code = run([sys.executable, str(F03_PY), "--input", str(mont_out), "--output", str(post_out), "--style-pack", str(style_pack_path), "--work", str(args.work)])
+        post_cmd = [
+            sys.executable, str(F03_PY),
+            "--input", str(mont_out),
+            "--output", str(post_out),
+            "--work", str(args.work),
+            "--report", str(args.work / f"{aid}_postprod_report.json"),
+        ]
+        if codex_pp:
+            post_cmd += ["--codex-postprod", str(args.codex_postprod)]
+        else:
+            post_cmd += ["--style-pack", str(style_pack_path)]
+        code = run(post_cmd)
         if code:
             log(f"POSTPROD FAIL asset {aid} exit {code}")
             return code

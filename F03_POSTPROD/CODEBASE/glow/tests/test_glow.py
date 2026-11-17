@@ -8,6 +8,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 GLOW = HERE.parent
 sys.path.insert(0, str(GLOW))
+sys.path.insert(0, str(GLOW.parents[2] / "tools"))
+from ffmpeg_bin import FFMPEG  # noqa: E402  (AUDIT_V1 L10 : plus de "ffmpeg" nu)
 
 from modal_glow import check_gl1, glow_clip  # noqa: E402
 from preview_glow import preview_frame  # noqa: E402
@@ -35,7 +37,7 @@ def _make_clip(path: Path, with_caption_bar: bool = True) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if with_caption_bar:
         cmd = [
-            "ffmpeg", "-y",
+            FFMPEG, "-y",
             "-f", "lavfi", "-i", "color=c=0x140a0a:s=180x320:d=0.4:r=10",
             "-f", "lavfi", "-i", "color=c=white:s=180x70:d=0.4:r=10",
             "-filter_complex", "overlay=0:250",
@@ -44,7 +46,7 @@ def _make_clip(path: Path, with_caption_bar: bool = True) -> None:
         ]
     else:
         cmd = [
-            "ffmpeg", "-y",
+            FFMPEG, "-y",
             "-f", "lavfi", "-i", "color=c=0x140a0a:s=180x320:d=0.4:r=10",
             "-pix_fmt", "yuv420p",
             str(path),

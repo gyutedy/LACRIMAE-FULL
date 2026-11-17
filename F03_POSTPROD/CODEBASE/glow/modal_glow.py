@@ -12,9 +12,24 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
-import modal
+# Modal n'est necessaire que pour le deploiement cloud. Un rendu local ou CI
+# n'a pas besoin de Modal : le coeur (glow_clip) est du ffmpeg pur. Avant PR5
+# l'import de ce module plantait sans Modal et le glow ne s'appliquait JAMAIS
+# dans l'orchestrateur local (AUDIT_V1 L17).
+try:
+    import modal
+except ImportError:  # pragma: no cover - environnement sans Modal
+    modal = None
+
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools"))
+    from ffmpeg_bin import FFMPEG, FFPROBE  # noqa: E402  (AUDIT_V1 L10)
+except Exception:  # pragma: no cover
+    FFMPEG = FFPROBE = "ffmpeg"
+
 
 APP_NAME = "lacrimae-sanguinala-glow"
 VOLUME_NAME = "lacrimae-sanguinala-glow"
@@ -31,10 +46,27 @@ image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("ffmpeg")
     .pip_install("rembg", "onnxruntime", "pillow")
-)
+) if modal is not None else None
 
-volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
-app = modal.App(APP_NAME, image=image)
+if modal is not None:
+    volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
+    app = modal.App(APP_NAME, image=image)
+else:
+    # Stub : les decorateurs @app.function peuvent rester en place, le coeur
+    # ffmpeg fonctionne sans Modal (postprod local / CI).
+    class _NullApp:
+        def function(self, *args, **kwargs):
+            def deco(fn):
+                return fn
+            return deco
+
+        def local_entrypoint(self, *args, **kwargs):
+            def deco(fn):
+                return fn
+            return deco
+
+    app = _NullApp()
+    volume = None
 
 
 def check_gl1(params: dict) -> int:
@@ -61,7 +93,7 @@ def _ffmpeg(cmd: list[str]) -> subprocess.CompletedProcess:
 def _has_audio(path: Path) -> bool:
     r = subprocess.run(
         [
-            "ffprobe", "-v", "error", "-select_streams", "a:0",
+            FFPROBE, "-v", "error", "-select_streams", "a:0",
             "-show_entries", "stream=index", "-of", "csv=p=0", str(path),
         ],
         capture_output=True,
@@ -128,7 +160,7 @@ def _subject_rembg_filter(sigma: float, opacity: float) -> str:
 
 def _extract_frame(src: Path, dst: Path) -> int:
     dst.parent.mkdir(parents=True, exist_ok=True)
-    r = _ffmpeg(["ffmpeg", "-y", "-i", str(src), "-frames:v", "1", str(dst)])
+    r = _ffmpeg([FFMPEG, "-y", "-i", str(src), "-frames:v", "1", str(dst)])
     if r.returncode != 0 or not dst.is_file():
         print("GL2 FAIL: extract frame:", (r.stderr or "")[-2000:])
         return 2
@@ -170,7 +202,7 @@ def glow_clip(frame_or_clip: Path, params: dict, out: Path) -> int:
     else:
         vf = _scene_filter(sigma, opacity)
 
-    cmd = ["ffmpeg", "-y", "-i", str(inp), *extra_inputs, "-filter_complex", vf, "-map", "[v]"]
+    cmd = [FFMPEG, "-y", "-i", str(inp), *extra_inputs, "-filter_complex", vf, "-map", "[v]"]
     if out.suffix.lower() in IMAGE_EXT:
         cmd += ["-frames:v", "1", str(out)]
     else:
@@ -253,6 +285,8 @@ def render_glow(params: dict) -> dict:
 
 @app.local_entrypoint()
 def main(task: str = "preview", glow_mode: str = "scene", sigma: float = 12.0, opacity: float = 0.35) -> None:
+    if modal is None:
+        raise SystemExit("glow Modal indisponible : utiliser glow_clip directement (postprod.py)")
     params = {"mode": glow_mode, "sigma": sigma, "opacity": opacity}
     if check_gl1(params) != 0:
         raise SystemExit(2)

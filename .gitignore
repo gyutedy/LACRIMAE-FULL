@@ -118,4 +118,4 @@ F01_LOOK/CODEBASE/public/pur_manifest.json
 F01_LOOK/OUT/
 BRIDGE/OUT/pur_manifest.json
 BRIDGE/PUR/
-.pr4_tmp/
+.pr*_tmp/

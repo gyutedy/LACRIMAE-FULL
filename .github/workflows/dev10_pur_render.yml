@@ -21,6 +21,10 @@ on:
         description: "URL raw du codex render (defaut : REVIEW/codex_render.json committe)"
         required: false
         default: ""
+      codex_postprod_url:
+        description: "URL raw du codex postprod (defaut : REVIEW/codex_postprod.json committe)"
+        required: false
+        default: ""
       vod_url:
         description: "VOD source, seulement si le pack n a pas source.vod_url"
         required: false
@@ -199,6 +203,38 @@ jobs:
           print("  titre :", c["title"])
           print("  logo  :", c["logo"])
           PY
+      - name: "Codex postprod (PP1 : le codex commande la post-prod)"
+        env:
+          CODEX_URL: ${{ github.event.inputs.codex_postprod_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${CODEX_URL:-}" ]; then
+            python3 - <<'PY'
+          import os, urllib.request
+          from pathlib import Path
+          url = os.environ["CODEX_URL"].strip()
+          req = urllib.request.Request(url, headers={
+              "User-Agent": "LACRIMAE",
+              "Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN','')}",
+          })
+          data = urllib.request.urlopen(req, timeout=120).read()
+          Path("REVIEW/codex_postprod.json").write_bytes(data)
+          print("codex postprod recupere :", url, f"({len(data)} o)")
+          PY
+          else
+            echo "codex postprod : REVIEW/codex_postprod.json committe"
+          fi
+          python3 tools/codex.py check REVIEW/codex_postprod.json --gate
+          python3 - <<'PY'
+          import json
+          c = json.load(open("REVIEW/codex_postprod.json", encoding="utf-8"))
+          print("  ordre :", " -> ".join(c["order"]))
+          print("  glow  :", c["glow"])
+          print("  lut   :", c["lut"])
+          print("  fade  :", c["fade_out"])
+          print("  caption:", c["caption"]["id"], c["caption"]["size"], "px")
+          PY
       - name: Watermark PNG (pack -> BRIDGE/IN)
         env:
           PERTURABO_REPO: ${{ github.event.inputs.perturabo_repo }}
@@ -301,6 +337,8 @@ jobs:
             BRIDGE/IN/
             BRIDGE/PUR/
             BRIDGE/OUT/pur_manifest.json
+            REVIEW/codex_render.json
+            REVIEW/codex_postprod.json
 
   render:
     name: render ${{ matrix.angle }}
@@ -403,6 +441,9 @@ jobs:
           find RUNNER_TEMP/prepare -name 'production_pack_pur_*.json' \
             -exec cp -f {} BRIDGE/PUR/ \;
           find RUNNER_TEMP/prepare -name 'pur_manifest.json' -exec cp -f {} BRIDGE/OUT/ \;
+          # le codex postprod voyage avec l'artefact (il peut venir d'une URL)
+          find RUNNER_TEMP/prepare -name 'codex_*.json' -exec cp -f {} REVIEW/ \;
+          ls -la REVIEW | head
       - uses: actions/download-artifact@v4
         with:
           pattern: pur-result-*
@@ -415,6 +456,22 @@ jobs:
             --manifest BRIDGE/OUT/pur_manifest.json \
             --results RUNNER_TEMP/results \
             --out OUT
+      - name: "F03_POSTPROD (codex_postprod : GLOW -> CAPTION -> LUT -> FADE)"
+        run: |
+          set -euo pipefail
+          python3 tools/codex.py check REVIEW/codex_postprod.json --gate
+          mkdir -p RUNNER_TEMP/postpro
+          shopt -s nullglob
+          n=0
+          for f in OUT/*.mp4; do
+            base=$(basename "$f")
+            python3 F03_POSTPROD/CODEBASE/postprod.py               --input "$f"               --output "RUNNER_TEMP/postpro/$base"               --codex-postprod REVIEW/codex_postprod.json               --work RUNNER_TEMP/postpro/work               --report "RUNNER_TEMP/postpro/${base%.mp4}_postprod_report.json"
+            mv -f "RUNNER_TEMP/postpro/$base" "$f"
+            n=$((n+1))
+          done
+          if [ "$n" -eq 0 ]; then echo "aucun MP4 a post-proder" >&2; exit 1; fi
+          cp RUNNER_TEMP/postpro/*_postprod_report.json OUT/ 2>/dev/null || true
+          echo "$n clip(s) post-prodes"
       - name: F05 + F06 batch
         run: |
           set -euo pipefail
@@ -427,3 +484,4 @@ jobs:
             F06_LUTHER/OUT/
             F05/OUT/camouflage_batch_report.json
             OUT/pur_aggregate_report.json
+            OUT/*_postprod_report.json

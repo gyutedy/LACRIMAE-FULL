@@ -53,7 +53,7 @@ pack PUR json (N assets)
   -> [F00_SOURCE]  yt-dlp --download-sections                              RECUPERER F00_PUR tel quel
   -> [F01_LOOK]    blur | reframing -> MP4 9:16                            RECUPERER F03_PICTOR, restreint
   -> [F02_MONTAGE] b-roll + flash blanc ajustable + SFX debut              NOUVEAU code CDC §7.5
-  -> [F03_POSTPROD] CAPTION -> GLOW -> LUT -> FADE                         mixte
+  -> [F03_POSTPROD] GLOW -> CAPTION -> LUT -> FADE   (ordre corrige PR5)  mixte
   -> [F05]         H.264 yuv420p + faststart                               RECUPERER tel quel
   -> [F06_LUTHER]  nettoyage metadonnees -> N livrables                    RECUPERER tel quel
   -> [REVIEW]      validation AVANT rendu final -> N MP4 dans OUT/
@@ -233,7 +233,7 @@ Coller :
 |---------|--------|
 | `F02_MONTAGE/CODEBASE/montage.py` | CDC §7.5 (script fourni) |
 | `F03_POSTPROD/CODEBASE/lut/lut_apply.py` | CDC §7.6 (script fourni) |
-| `F03_POSTPROD/CODEBASE/postprod.py` | orchestrateur CAPTION -> GLOW -> LUT -> FADE (squelette §7.7, appelle les scripts colles) |
+| `F03_POSTPROD/CODEBASE/postprod.py` | orchestrateur GLOW -> CAPTION -> LUT -> FADE, pilote par `codex_postprod.json` (PR5) |
 | `run_all.py` | CDC §7.7 : BRIDGE -> F00 -> F01 -> F02 -> F03 -> F05 -> F06, stop premiere porte |
 
 GLOW Phase 2 = stubs de fichiers `modal_glow.py` / `preview_glow.py` avec la signature CDC §7.2 uniquement. Implementation Modal = Phase 4. Ne pas inventer SAM/rembg ici.

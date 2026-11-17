@@ -46,7 +46,7 @@ branchement du moteur sur le codex, la survie du watermark, et la route CI.
 | PR2 | route Actions reparee + `ffmpeg` dans le PATH du job | **fait** |
 | PR3 | contrat des 2 codex (schemas, normaliseurs, tests, `.gitignore`) | **fait** |
 | PR4 | le moteur applique `codex_render` (Remotion branche, logo, watermark propage) | **fait** — run CI `44191005402` vert |
-| PR5 | post-prod applique `codex_postprod` + inversion `GLOW -> CAPTION` | a faire |
+| PR5 | post-prod applique `codex_postprod` + inversion `GLOW -> CAPTION` | **fait** |
 | PR6 | review en ligne ecrit les 2 codex (`codex_write.yml`) | a faire |
 
 Prochain pas concret : **PR5** — post-prod applique `codex_postprod.json` + inversion `GLOW -> CAPTION`. Le
