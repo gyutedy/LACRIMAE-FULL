@@ -169,7 +169,7 @@ jobs:
             echo "aucun pack MARK1 : packs PUR utilises tels quels"
           fi
           ls -la BRIDGE/IN
-      - name: Codex render (W1-R : le codex commande)
+      - name: "Codex render (W1-R : le codex commande)"
         env:
           CODEX_URL: ${{ github.event.inputs.codex_render_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -243,7 +243,7 @@ jobs:
               print("aucun watermark declare dans les packs")
           PY
           ls -la BRIDGE/IN
-      - name: Convert pack (G0-S + packs mono-clip, codex_render)
+      - name: "Convert pack (G0-S + packs mono-clip, codex_render)"
         run: |
           set -euo pipefail
           shopt -s nullglob
