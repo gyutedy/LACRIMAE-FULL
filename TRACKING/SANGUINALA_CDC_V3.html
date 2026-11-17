@@ -38,6 +38,18 @@
   <p>V3 = périmètre V1 réduit à l'essentiel du clipping (coupe, titres, sous-titres, glow, LUT, fondu de fin, b-roll + flash blanc + SFX, watermark) — sauts de coupe, netteté, zoom et effets « cosmétiques » retirés de V1 et reportés en V2+.</p>
 </div>
 
+<div class="stop">
+<p><strong>ERRATUM DU 2026-11-17 — à lire avant d'implémenter.</strong> Le cahier reste la référence de périmètre, mais cinq points ont été corrigés après constat sur le code et sur le pack réel. Le plan d'exécution à jour est <code class="inline">TRACKING/PLAN_CODEX_V1.md</code>.</p>
+<ol>
+<li><strong>b-roll, flash blanc et SFX sont HORS périmètre V1.</strong> Le pack MARK1 n'émet aucun champ <code class="inline">broll</code> / <code class="inline">sfx</code> / <code class="inline">flash</code> (vérifié sur <code class="inline">production_pack_mark1_e99bd523.json</code>) et <code class="inline">F02_MONTAGE/montage.py</code> est un passthrough. Partout où ce cahier annonce du b-roll, lire « rien à monter ».</li>
+<li><strong>Le « codex » unique devient DEUX codex, tous deux commités :</strong> <code class="inline">REVIEW/codex_render.json</code> (moteur : look, typographie du titre, place du logo) et <code class="inline">REVIEW/codex_postprod.json</code> (caption, glow, LUT, fade). Chacun porte <code class="inline">validated_by_magos</code> et bloque le rendu s'il est faux.</li>
+<li><strong>Un codex = un style pour N clips.</strong> Le codex ne nomme jamais un titre : le texte vient du pack (<code class="inline">copywriting.overlay_title</code>), le codex n'en porte que l'apparence. Aucun sélecteur de clip, aucun réglage par clip.</li>
+<li><strong>Ordre de post-prod gravé : GLOW → CAPTION → LUT → FADE.</strong> Le glow passe avant le caption, sinon il floute les sous-titres.</li>
+<li><strong>Watermark :</strong> le PNG vient du pack (<code class="inline">watermark.file</code>, <code class="inline">required: true</code>), la place / taille / opacité viennent de <code class="inline">codex_render.logo</code>, et il est dessiné par le <strong>moteur</strong> (calque logo Remotion). Il ne passe jamais en post-prod.</li>
+</ol>
+<p>Le moteur dessine les <strong>titres</strong>, la post-prod dessine les <strong>sous-titres</strong>. Le bras armé ne corrige jamais un titre : un titre faux est un défaut PERTURABO.</p>
+</div>
+
 <h2>0. À lire en premier (pour l'agent de codage)</h2>
 <div class="doctrine">
 <p>Ce document est <strong>auto-suffisant</strong>. Tout ce qui est marqué <span class="tag reuse">RÉCUPÉRER</span> existe déjà, a déjà été testé, et se copie avec les commandes git fournies. Tout ce qui est marqué <span class="tag new">NOUVEAU</span> est fourni en code complet ou décrit précisément. Tu n'as <strong>rien à inventer, rien à « améliorer »</strong>. Si un bloc ne s'exécute pas, tu ne réécris PAS le pipeline : tu rapportes l'erreur exacte dans <code class="inline">TRACKING/SANGUINALA_LOG.md</code> et tu t'arrêtes à la porte fautive. Ce qui est en <span class="tag later">V2+</span> est <strong>interdit en V1</strong> — ne le code pas, même si « ce serait rapide ».</p>

@@ -88,3 +88,52 @@ Le JSON que produit la preview reprend son nom canonique `codex.json`
 (ancien `sanguinala_review.json`). Renomme partout : run_all.py,
 F03_PREVIEW (App.jsx + vite.config.js), .gitignore, docs.
 Fichier existant renomme REVIEW/sanguinala_review.json -> REVIEW/codex.json.
+
+## 2026-11-17 — PR1 : docs alignees sur « le codex commande, le pack fournit »
+
+Aucun code touche. Le but est que la doc ne mente plus avant de brancher le
+moteur (sinon on code contre un cahier faux, cf. AUDIT_V1 constat L11).
+
+- **Nouveau** `TRACKING/PLAN_CODEX_V1.md` : le plan valide (doctrine en 8
+  points, contrat des 2 codex, portes W1-R / PP1 / PP2, inventaire du pillage
+  branche par branche, les 6 PR, defaut de fin, interdits).
+- **Deux codex, deux review, deux portes** : `codex_render.json` (moteur) et
+  `codex_postprod.json` (glow + sous-titres), tous deux commites. Le fragment
+  unique `codex.json` disparait des docs.
+- **Bannissement acte** : b-roll, flash blanc et SFX sont hors V1. Le pack
+  MARK1 n'emet aucun de ces champs et `F02_MONTAGE` est un passthrough
+  (AUDIT_V1 L11).
+- `README.md` : pipeline corrige (2 codex en entree, F02 passthrough,
+  GLOW -> CAPTION), tableau Docs, section « ce qui vit dans le depot ».
+- `TRACKING/PUR_GATES.md` : portes actives reecrites — **W1-R** (codex render),
+  **PP1** (codex postprod), **PP2** (ordre post-prod), M1 = passthrough. Les
+  portes dev10-v2 restent en archive, clairement separees.
+- `TRACKING/GUIDE_BRAS_ARME_PUR.md` : reecrit pour V1 (l'archive Heisenberg /
+  b-roll / punch-in est retiree, seul un tableau d'interdits et de depannage
+  reel subsiste).
+- `TRACKING/GUIDE_REVIEW_UTILISATEUR.md` : les deux review, ce que chacune
+  grave, et la regle « le texte du titre vient du pack, jamais de la review ».
+- `TRACKING/GUIDE_UTILISATION.md` : `python3` -> `python` (L6), codex renommes,
+  prerequis ffmpeg/PATH (L10), heritage dev10-v2 isole et marque non executable.
+- `TRACKING/TODO_CONTINUATION.md` : etat reel (aucun MP4 livre), les 8
+  decisions du 2026-11-17, la table des 6 PR, et ce qui n'appartient PAS a
+  cette branche (M1, M2, M3 = PERTURABO).
+- `TRACKING/SANGUINALA_CDC_V3.html` : erratum date en tete (5 points) — le
+  cahier reste la reference de perimetre, il n'est pas reecrit en silence.
+- `AUDIT_V1.md` : constats **L10** (ffmpeg hors PATH), **L11** (docs b-roll
+  fausses, corrige ici), **L12** (watermark jete par l'adaptateur et le
+  converter). M1 et M2 reattribues a PERTURABO. Table d'etat mise a jour.
+- `REVIEW/README.md` : les 2 codex, leur schema, le logo (PNG du pack + place
+  du codex), les portes.
+
+Docs de fregate alignees sur l'arbre reel et sur les 2 codex (elles decrivaient
+encore `F03_PICTOR` / `F00_PUR` / `F05_CAMOUFLAGE` et un codex unique) :
+`F01_LOOK/README.md` (reecrit : le moteur est le seul dessinateur de texte),
+`F01_LOOK/CODEBASE/README_DEPS.md`, `F02_MONTAGE/README.md` (passthrough),
+`F03_POSTPROD/README.md` (ordre GLOW -> CAPTION), `F03_PREVIEW/README.md`
+(T1 = style seul, le texte vient du pack), `F00_SOURCE/README.md`,
+`BRIDGE/README.md` (projection du codex), `F05/README.md`, `SHARED/README.md`,
+`F04_HEISENBERG/README.md` (marque hors flux), `.github/workflows/README.md`.
+
+Prochaine etape : **PR2** — reparer la route Actions (`F00_SOURCE`,
+`F01_LOOK`, `F05`) et mettre ffmpeg dans le PATH du job.

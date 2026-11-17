@@ -1,86 +1,100 @@
 # LACRIMAE — TODO DE CONTINUATION
 
 > Point d'entree obligatoire apres toute reprise.
-> Derniere mise a jour : 2026-11-10.
-> Branche active : `sanguinala-v1` depuis `dev10-v2`.
-> Depot public : `https://github.com/gyutedy/LACRIMAE-FULL`
-> Statut : Phase 7 PARTIEL (MID YouTube Shorts M9P1qCwsgR0). F03_PREVIEW live = LOOK + titres editables + fg_scale + curseur watermark. F07 intacte. GitHub Pages rebranche (erreur CDC : l'exclure). Hub f03/ + f07/ + archive OMNIS. Prochain test = pack + --preview-stage, valider JSON review + s1, puis N MP4.
-
-## SANGUINALA — lire dans cet ordre
-
-1. `TRACKING/SANGUINALA_CDC_V3.html` — cahier V3, source unique, ne pas devier.
-2. `TRACKING/SANGUINALA_IMPLEMENTATION_PLAN.md` — phases 0–7, ou piller, portes, E2E, commit/push.
-3. `TRACKING/SANGUINALA_LOG.md` — 1 ligne par tentative.
-
-Prochaine etape exacte : test pack `--preview-stage` (F03_PREVIEW 5174 + F07 5173), valider JSON review + s1, puis `run_all` N MP4. Whop encore ouvert. Heisenberg hors flux V1.
+> Derniere mise a jour : 2026-11-17.
+> Branche active : `sanguinala-v1`. Depot : `https://github.com/gyutedy/LACRIMAE-FULL`
+> Plan d'execution : **`TRACKING/PLAN_CODEX_V1.md`** (2 codex, 6 PR).
 
 ---
 
-# Archive — LACRIMAE dev10-v2 (avant SANGUINALA)
+## 1. Etat reel au 2026-11-17
 
-> Derniere mise a jour historique : 2026-10-05.
-> Branche : `dev10-v2` sur `jfbjfojfonf/LACRIMAE` (miroir `gyutedy/LACRIMAE-FULL`).
-> Statut : A–G poses (F05/F06, F00_PUR, Bridge, Preview, PICTOR, Heisenberg, CI).
+| Element | Etat | Preuve |
+|---|---|---|
+| Pack MARK1 -> PUR | fait | `REVIEW/packs/production_pack_pur_e99bd523_A0{1,2,3}.json` |
+| Bridge PUR -> manifeste | fait | `BRIDGE/OUT/pur_manifest.json` (`dev10.pur.v1`, 1080x1920, blur) |
+| Dependances Remotion (`F01_LOOK`) | installees | `npm install` OK (AUDIT L2) |
+| preview render (F03_PREVIEW) | live | `f03/` sur Pages |
+| preview postprod (F07) | live | `f07/` sur Pages |
+| **Le codex commande le moteur** | **PAS FAIT** | `run_all.py:34` definit `F01_MJS`, jamais appele ; `apply_look_blur` code `sigma=20` en dur (AUDIT **L8**) |
+| **Le watermark atteint le MP4** | **PAS FAIT** | le PNG est jete par l'adaptateur et le converter (AUDIT **L12**) |
+| **La CI sait rendre** | **PAS FAIT** | le workflow pointe `F00_PUR/`, `F03_PICTOR/`, `F05_CAMOUFLAGE/` : inexistants (AUDIT **L9**) |
+| Un MP4 livre | **aucun** | `OUT/` vide, `F00_SOURCE/OUT/` vide |
 
-## Etat confirme
+Conclusion : la chaine est validee **jusqu'a la porte**, pas jusqu'au MP4.
+Il ne manque pas « le telechargement du segment et le rendu » : il manque le
+branchement du moteur sur le codex, la survie du watermark, et la route CI.
 
-`dev10` (cote / `dev10-v1`) etait un palimpseste : 19 workflows, moteurs
-ranking/reveal/hybrid melanges au PUR, SIGNUM inutile, Heisenberg advisory
-(JSON, pas un MP4). `dev10-v2` repart de zero.
+## 2. Ce qui a ete fige le 2026-11-17 (decisions operateur)
 
-Doctrine figee :
+1. Deux codex commites : `REVIEW/codex_render.json` et `REVIEW/codex_postprod.json`.
+2. Un codex = un style, applique a N clips. Aucun selecteur de clip.
+3. Le codex ne nomme jamais un titre : le texte vient du pack.
+4. Le moteur dessine les titres, la post-prod les sous-titres.
+5. Ordre post-prod grave : **GLOW -> CAPTION -> LUT -> FADE**.
+6. Watermark = logo PNG dessine par le moteur ; PNG du pack, place/taille du codex.
+7. V1 sans b-roll, SFX ni jump cut : `F02_MONTAGE` = passthrough assume.
+8. La review tourne sur GitHub, le rendu sur Actions, le GPU sur Modal.
+
+## 3. Prochaine etape exacte
+
+**PR1 (docs) est faite.** L'ordre des PR est dans `TRACKING/PLAN_CODEX_V1.md` §7 :
+
+| PR | Contenu | Etat |
+|---|---|---|
+| PR1 | docs vraies (ce fichier + 9 docs + `PLAN_CODEX_V1.md`) | FAIT |
+| PR2 | route Actions reparee + `ffmpeg` dans le PATH du job | a faire |
+| PR3 | contrat des 2 codex (schemas, normaliseurs, tests, `.gitignore`) | a faire |
+| PR4 | le moteur applique `codex_render` (Remotion branche, logo, watermark propage) | a faire |
+| PR5 | post-prod applique `codex_postprod` + inversion `GLOW -> CAPTION` | a faire |
+| PR6 | review en ligne ecrit les 2 codex (`codex_write.yml`) | a faire |
+
+Prochain pas concret : **PR2**. Tant que la CI appelle des dossiers
+inexistants, aucun test de bout en bout n'est possible.
+
+## 4. Ce qui n'appartient PAS a cette branche
+
+| Sujet | Ou ca se corrige |
+|---|---|
+| Titres haches (M1 : `She lost 86,000 seconds`, `She paid 385 was much`) | **PERTURABO** (`ORACLE/answers.json`) |
+| `source.directive_path` en chemin Windows (M2) | **PERTURABO** |
+| `vod_url` absente du pack (M3) | **PERTURABO** (ou `--vod-url` a l'adaptation) |
+| Pack qui ne declare pas `montage_style` | **PERTURABO** |
+
+Le bras arme ne corrige rien : il rend ce que le pack donne.
+
+## 5. Reprise (sandbox)
+
+```bash
+git clone https://github.com/gyutedy/LACRIMAE-FULL.git
+cd LACRIMAE-FULL
+git checkout sanguinala-v1
+```
+
+Lire dans cet ordre :
+
+1. `TRACKING/PLAN_CODEX_V1.md` — le plan, les 2 codex, les 6 PR.
+2. `TRACKING/PUR_GATES.md` — les portes actives.
+3. `AUDIT_V1.md` — les constats et leur etat (M1-M4, L1-L12).
+4. `TRACKING/GUIDE_UTILISATION.md` — mode d'emploi operateur.
+5. `TRACKING/SANGUINALA_LOG.md` — 1 ligne par tentative, l'historique vrai.
+
+---
+
+# Archive — dev10-v2 (avant SANGUINALA)
+
+> Derniere mise a jour historique : 2026-10-05. Branche `dev10-v2`.
+> Statut : A-G poses (F05/F06, F00_PUR, Bridge, Preview, PICTOR, Heisenberg, CI).
+> Conserve pour memoire seulement : l'arbre a change de noms et Heisenberg,
+> b-roll et SFX sont sortis du flux V1.
+
+Doctrine figee a l'epoque, toujours valable :
 
 1. PERTURABO = cerveau (OU / QUOI). LACRIMAE = bras (COMMENT).
 2. Pack in, MP4 out. 1 asset = 1 job.
-3. Trois styles : blur, split_scene, reframing.
+3. Trois styles : blur, split_scene, reframing. (V1 : blur et reframing seulement.)
 4. Zoom banni partout.
-5. Heisenberg est une vraie frégate : il **modifie le MP4**.
-6. SIGNUM n'existe pas.
+5. SIGNUM n'existe pas.
 
-## Priorites
-
-1. **Docs** — arbre + contrats + portes. FAIT.
-2. **A F05 + F06** — camouflage H.264/loudnorm + luther YouTube, `--batch`. FAIT.
-3. **B F00_PUR** — yt-dlp segment, G0–G3, `pur_aggregate.py`, converter G0-S. FAIT.
-4. **C BRIDGE** — fetch PUR-only, G0, convert, transit preview/PICTOR. FAIT.
-5. **D F03_PREVIEW** — LOOK Vite, 3 styles, 0 zoom, overlay. FAIT.
-6. **E F03_PICTOR** — miroir Remotion de la preview. FAIT.
-7. **F F04_HEISENBERG** — jump cuts, SFX, B-roll, flash, punch-in-cut → MP4. FAIT.
-8. **G CI** — un seul workflow `dev10_pur_render.yml`. FAIT.
-
-## Contrats a preserver
-
-- Pack PUR : `production_pack_pur_*.json` — propriete PERTURABO. JAMAIS
-  modifie cote LACRIMAE.
-- Manifeste : `dev10.pur.v1` produit par le bridge.
-- Parite preview/render : meme moteur LOOK en F03_PREVIEW et F03_PICTOR.
-- Heisenberg consomme le MP4 PICTOR + le manifeste, ecrit un MP4.
-- Assets volumineux jamais commites (CI artifacts / Releases).
-
-## Interdits a ne pas reintroduire
-
-- Ranking, reveal, hybrid, music timeline.
-- Zoom / swell / breathing_zoom dans PICTOR ou Heisenberg.
-- Heisenberg "advisory" qui ne fait que du JSON.
-- F04_SIGNUM.
-- Heritage `sequences.json` / fps vole / re-routage ranking.
-
-## Prochaine etape exacte
-
-Code pipeline clos (fonte Remotion, ducking/smash Heisenberg, lockfile
-PICTOR). Premier E2E CI (Actions → DEV10-v2 — PUR render) avec un pack
-PERTURABO joignable. SFX mp3 optionnels dans
-`F03_PICTOR/CODEBASE/public/sfx/` (impact / whoosh).
-
-Si le run E2E casse : corriger la frégate fautive, pas le pack.
-
-## Reprise sandbox
-
-```bash
-git clone https://github.com/jfbjfojfonf/LACRIMAE.git
-cd LACRIMAE
-git fetch origin --prune
-git checkout dev10-v2
-```
-
-Lire ce fichier puis `TRACKING/PUR_GATES.md` avant tout code.
+Interdits toujours en vigueur : ranking, reveal, hybrid, music timeline,
+zoom / swell / breathing_zoom, F04_SIGNUM, `sequences.json`.

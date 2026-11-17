@@ -1,15 +1,18 @@
 # LACRIMAE — PORTES (SANGUINALA V1 + archive PUR)
 
-## SANGUINALA V1 (CDC §9) — portes actives
+## SANGUINALA V1 — portes actives
+
+> Mise a jour 2026-11-17 : les deux codex commites remplacent l'ancien
+> `REVIEW/codex.json` mono-fichier. Voir `TRACKING/PLAN_CODEX_V1.md`.
 
 ```text
-pack PUR
+pack PUR + codex_render.json
   → BRIDGE G0
-  → F03_PREVIEW W1 / T1   (AVANT moteur, JSON review = ancien codex)
+  → F03_PREVIEW W1-R / T1   (AVANT moteur : le codex render est valide)
   → F00_SOURCE G1/G2
-  → F01_LOOK G3 (blur|reframing)
-  → F02_MONTAGE M1 (0 jump cut)
-  → F03_POSTPROD G4 CAPTION (F07 PREVIEW s1) / GL1-GL2 GLOW / L1 LUT / F1 FADE
+  → F01_LOOK G3 (blur|reframing + titre + logo)
+  → F02_MONTAGE M1 (passthrough : 0 b-roll, 0 SFX, 0 jump cut)
+  → F03_POSTPROD PP1 / PP2 GLOW → CAPTION → LUT → FADE
   → F05 / F06 G6
 ```
 
@@ -17,19 +20,21 @@ pack PUR
 |-------|--------|---------|
 | **G0 PACK** | Avant tout | `mode=pur`, `vod_url`, `start_sec < end_sec` par asset, segment <= 150 s, `montage_instructions` |
 | **G0-S STYLE** | Conversion | `blur` OU `reframing`. Autre / infere / `split_scene` = REFUS exit 2 |
+| **W1-R CODEX RENDER** | Avant tout rendu | `REVIEW/codex_render.json` present, schema `sanguinala.render.codex.v1` valide, `validated_by_magos: true`. Absent ou `false` = rendu refuse |
+| **PP1 CODEX POSTPROD** | Avant post-prod | `REVIEW/codex_postprod.json` present, schema `sanguinala.postprod.codex.v1` valide, `validated_by_magos: true` |
+| **PP2 ORDRE** | Post-prod | ordre applique = `glow → caption → lut → fade`. Les sous-titres ne sont jamais floutes par le glow |
 | **G1 SOURCE** | Download | yt-dlp OK, segment seulement |
 | **G2 DUREE** | Download | end − start ± 0,5 s |
-| **G3 LOOK** | F01 | MP4 9:16, 0 zoom anime |
-| **M1 MONTAGE** | F02 | b-roll aux temps du pack, flash [0,04 ; 0,5] s, SFX debut, 0 jump cut |
-| **G4 CAPTION** | POST-PROD | F07 PREVIEW s1 (`caption/OUT/style.json`) ; overlay Whisper/Blender = runtime |
-| **GL1 / GL2** | POST-PROD | sigma 4–30, opacite <= 0,6 ; preview frame avant batch |
-| **L1 / F1** | POST-PROD | .cube existe si LUT ; fade/darken vers la fin |
-| **W1 REVIEW** | F03_PREVIEW AVANT moteur | clic, double-clic, images pack → `REVIEW/codex.json` |
-| **T1 TITRES** | F03_PREVIEW → rendu | titres pack affiches, appliques a N clips |
-| **G-PACK** | POST-PROD | meme style_pack sur N clips |
+| **G3 LOOK** | F01 | MP4 9:16, 0 zoom anime, titre du pack + logo PNG pose |
+| **M1 MONTAGE** | F02 | **passthrough assume** : F02 copie l'entree. V1 = 0 b-roll, 0 SFX, 0 flash, 0 jump cut |
+| **G4 CAPTION** | POST-PROD | `codex_postprod.caption` (schema `dev11.caption.style.v1`) ; overlay Whisper/Blender = runtime Modal |
+| **GL1 / GL2** | POST-PROD | `codex_postprod.glow` : sigma 4–30, opacite <= 0,6 ; preview frame avant batch |
+| **L1 / F1** | POST-PROD | `codex_postprod.lut` (.cube existe si actif) ; `fade_out` vers la fin |
+| **T1 TITRES** | F01_LOOK | le titre vient du **pack** (`copywriting.overlay_title`), le style du **codex render**. Le codex ne nomme jamais un titre |
+| **G-PACK** | POST-PROD | meme codex render applique a N clips, aucun reglage par clip |
 | **G6 LIVRABLE** | F05/F06 | H.264 yuv420p faststart, N MP4 = N assets |
 
-Heisenberg / P3 TEMPS (jump cuts) = hors flux V1.
+Heisenberg / P3 TEMPS (jump cuts) = **hors flux V1**, jamais appele.
 
 ---
 

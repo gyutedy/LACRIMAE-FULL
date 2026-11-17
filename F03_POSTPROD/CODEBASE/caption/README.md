@@ -78,7 +78,7 @@ Voir `TRACKING/CAPTION_GATES.md`. Operateur : `TRACKING/GUIDE_CAPTION.md`.
 ## Interdits
 
 - Live Blender pendant les sliders preview
-- Coller F07 dans F03_PREVIEW / F03_PICTOR
+- Coller F07 dans F03_PREVIEW / F01_LOOK
 - LUT `.cube` comme recette 3D
 - Zoom / swell dans F03 ou F04 (P-ZOOM ZERO intact)
 - Assets lourds dans git (IN/OUT media = artifacts / Releases)

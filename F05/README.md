@@ -1,7 +1,7 @@
-# F05_CAMOUFLAGE
+# F05
 
-Reencodage H.264 yuv420p, faststart, loudnorm. Entree = MP4 Heisenberg.
-Sortie = MP4 pret luther.
+Reencodage H.264 yuv420p, faststart, loudnorm. Entree = le MP4 sorti du
+LOOK + post-prod (F03_POSTPROD/OUT). Sortie = MP4 pret luther.
 
 ## Contrats
 

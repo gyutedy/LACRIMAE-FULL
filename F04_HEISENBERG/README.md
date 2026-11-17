@@ -1,5 +1,9 @@
 # F04_HEISENBERG
 
+> **HORS FLUX V1.** Cette fregate n'est jamais appelee par `run_all.py` ni par
+> la CI. Elle est conservee pour V2+. En V1 : pas de jump cut, pas de SFX, pas
+> de b-roll (voir `TRACKING/PLAN_CODEX_V1.md`).
+
 Frégate TEMPS. Prend le MP4 LOOK de PICTOR + le manifeste et **ecrit un
 nouveau MP4**. Pas du JSON advisory. Pas Signum.
 

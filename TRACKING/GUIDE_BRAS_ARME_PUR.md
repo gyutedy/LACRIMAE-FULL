@@ -1,132 +1,123 @@
-# Guide Operateur — Bras arme (SANGUINALA + archive PUR)
+# Guide du Bras Arme — SANGUINALA V1
 
-> SANGUINALA V1 (2026-11-10) : nouvel arbre. Heisenberg hors flux.
-> Arbre : `BRIDGE/` `F00_SOURCE/` `F03_PREVIEW/` (LOOK + W1/T1, AVANT moteur) `F01_LOOK/` `F02_MONTAGE/` `F03_POSTPROD/` (caption F07 + glow + lut) `F05/` `F06_LUTHER/`.
-> Pipeline : pack → F03_PREVIEW (JSON review) → F00 → F01 → F02 → F03 CAPTION/GLOW/LUT/FADE → F05 → F06.
-> Operateur = toi. Tu valides F03_PREVIEW puis F07 PREVIEW puis glow, tu n'edites ni code ni pack.
-> Styles V1 : `blur` | `reframing` seulement (`split_scene` = V2+).
-> Cahier : `TRACKING/SANGUINALA_CDC_V3.html`. Plan : `TRACKING/SANGUINALA_IMPLEMENTATION_PLAN.md`.
+> Branche `sanguinala-v1`. Pack PUR in, N MP4 out.
+> Plan d'execution : `TRACKING/PLAN_CODEX_V1.md`. Portes : `TRACKING/PUR_GATES.md`.
+> Remplace l'ancien guide (archive dev10-v2, qui decrivait Heisenberg, b-roll,
+> SFX et punch-in : rien de tout cela n'existe en V1).
 
-Le texte ci-dessous est l'archive operateur **dev10-v2** (noms anciens BRIDGE_PERTURABO / F00_PUR / F03_PICTOR / F05_CAMOUFLAGE / Heisenberg). Chemins a traduire vers l'arbre ci-dessus.
+---
 
-# Archive — Guide Operateur PUR (dev10-v2)
+## 1. Ce que fait le bras arme
 
-> Pour le Warsmith qui veut transformer un pack PUR en video publiee.
-> Pas besoin de connaitre le code. Suivre les portes.
+**Le codex commande, le pack fournit.**
 
-## Principe en 3 lignes
+| Piece | Proprietaire | Contenu |
+|---|---|---|
+| `production_pack_mark1_<token>.json` | PERTURABO | matiere : bornes, `vod_url`, texte du titre, PNG du watermark |
+| `REVIEW/codex_render.json` | LACRIMAE (review render) | style : look, typographie du titre, position du logo |
+| `REVIEW/codex_postprod.json` | LACRIMAE (review postprod) | style : caption, glow, lut, fade, ordre |
 
-1. **PERTURABO** exporte `production_pack_pur_*.json` (segment, overlay,
-   instructions de montage).
-2. **LACRIMAE** execute : bridge → F00_PUR → preview → PICTOR (look) →
-   Heisenberg (temps) → F05 → F06.
-3. Tu n'appuies que sur les portes. Jamais la VOD complete. Jamais de
-   modification du pack cote LACRIMAE.
+Le bras arme **ne reflechit pas** : il execute exactement ce que le pack
+donne. Un titre faux est un defaut PERTURABO, jamais une correction locale.
+Le pack n'est **jamais** modifie cote LACRIMAE.
 
-## Checklist
+## 2. Pipeline
 
-- Pack PUR recent dans `PERTURABO/MONDES_FORGES/CLIPPING/EXPORT/`
-- VOD source joignable
-- Style choisi parmi `blur`, `split_scene`, `reframing`
-- Canvas (9:16 par defaut)
-
-## Etape 0 — Le style : c'est TOI qui choisis
-
-Si le pack ne declare pas `montage_style`, rien n'est rendu. Deux options :
-
-```bash
-# Option A : a la conversion
-node tools/convert_pur_pack.mjs --pack ... --style blur ...
-
-# Option B : champ style du workflow CI
+```text
+pack PUR + codex_render.json
+  → BRIDGE            G0, conversion, projection du codex dans le manifeste
+  → F00_SOURCE        yt-dlp --download-sections (jamais la VOD entiere)
+  → F01_LOOK          Remotion : blur|reframing + titre + logo → MP4 9:16
+  → F02_MONTAGE       passthrough (0 b-roll, 0 SFX, 0 jump cut)
+  → F03_POSTPROD      GLOW (Modal) → CAPTION (Modal) → LUT → FADE
+  → F05               camouflage
+  → F06_LUTHER        livrable
 ```
 
-Jamais de rendu en silence. Ranking refuse.
+**Le moteur dessine les titres. La post-prod dessine les sous-titres.**
+Le glow passe **avant** le caption : sinon il floute les sous-titres.
 
-| Style | Rendu LOOK (PICTOR) |
-|-------|---------------------|
-| `blur` | couche arriere floutee + couche avant nette |
-| `split_scene` | video en haut + element bas |
-| `reframing` | recadrage fixe du clip (echelle / offset, **pas un zoom anime**) |
+## 3. Les trois portes de l'operateur
 
-## Etape 1 — Bridge
+| Porte | Ce que tu fais | Ce que ca grave |
+|---|---|---|
+| **W1-R** | review render : look, taille/place/couleurs du titre, place du logo | `REVIEW/codex_render.json` + `validated_by_magos: true` |
+| **PP1** | review postprod : police/taille/place des sous-titres, sigma du glow, LUT, fade | `REVIEW/codex_postprod.json` + `validated_by_magos: true` |
+| **G6** | tu regardes le MP4 final | livraison |
 
-```bash
-python3 BRIDGE_PERTURABO/CODEBASE/lac_bridge_forge.py --pur --pack-filter pur_A01
-```
+Rien ne se regle « par clip ». Un codex = un style, applique a **N clips**.
+Tu ne choisis jamais quel titre : le texte vient du pack, le codex n'en porte
+que l'apparence.
 
-Gate G0. Sortie : `pur_manifest.json` vers preview et PICTOR.
+## 4. Lancer un rendu (voie nominale : GitHub Actions)
 
-## Etape 2 — F00_PUR
+Actions → **DEV10-v2 — PUR render** → Run workflow.
 
-```bash
-python3 F00_PUR/CODEBASE/f00_pur.py \
-  --pack BRIDGE_PERTURABO/IN/production_pack_pur_A01.json \
-  --out F00_PUR/OUT
-```
+| Input | Valeur |
+|---|---|
+| `pack_url` | URL brute du pack MARK1 (`production_pack_mark1_<token>.json`) |
+| `codex_render_url` | URL brute de `REVIEW/codex_render.json` |
+| `codex_postprod_url` | URL brute de `REVIEW/codex_postprod.json` |
+| `vod_url` | seulement si le pack ne porte pas `source.vod_url` |
+| `canvas` / `style` | defaut `9:16` / style declare par le pack |
 
-Gates G0–G3. Sortie : `pur_A01.mp4` + `pur_sources.json`.
-Jamais la VOD complete.
+Sorties : artefacts `OUT/` (N MP4), rapports F05/F06. Aucun fichier lourd
+n'est commite.
 
-## Etape 3 — Preview (P1)
-
-Onglet PUR :
-
-- Overlay 1–3 lignes, statique debut → fin
-- Panneau du style actif uniquement
-- Anti-detection : miroir, vitesse, crop % — **pas de zoom respiration**
-- Validation visuelle obligatoire avant PICTOR
-
-## Etape 4 — PICTOR (P2 LOOK)
-
-Rendu Remotion, meme moteur que la preview. Framing fixe. Zero zoom.
-Sortie : MP4 compose (look applique, timeline encore "plate").
+## 5. Lancer un rendu (local, pour deboguer)
 
 ```bash
-cd F03_PICTOR/CODEBASE
-npm ci
-node render_pictor.mjs \
-  --manifest ../../BRIDGE_PERTURABO/OUT/pur_manifest.json \
-  --clips ../../F00_PUR/OUT \
-  --out ../../F03_PICTOR/OUT
+python run_all.py --pack <pack.json> --work WORK --out OUT \
+  --codex-render REVIEW/codex_render.json \
+  --codex-postprod REVIEW/codex_postprod.json
 ```
 
-## Etape 5 — Heisenberg (P3 TEMPS)
+Prerequis machine :
 
-Heisenberg prend le MP4 PICTOR + le manifeste et **ecrit un nouveau MP4**.
+- `ffmpeg` et `ffprobe` dans le `PATH` (sous Windows : `C:\ffmpeg\bin`).
+  Sans eux, tout rendu echoue — voir `AUDIT_V1` constat **L10**.
+- `npm install` dans `F01_LOOK/CODEBASE` (Remotion) et `F03_PREVIEW/CODEBASE`.
+- Sur cette machine, `env -u npm_config_allow_scripts` pour les installs
+  (voir `AUDIT_V1` constat **L7**).
+- Sous Windows, la commande est `python`, pas `python3` (constat **L6**).
 
-Il execute, dans l'ordre du pack :
+## 6. Les deux review, en ligne
 
-- jump cuts (silences)
-- punch-in **par cut** : a `in`, coupe et joue `[in, out]` recadre plus
-  serre ; a `out`, coupe et revient au framing normal
-- B-roll / memes
-- flash blanc d'entree (jamais de sortie)
-- SFX cales sur la meme frame, sous la voix
-- ducking / smash audio
+| Review | URL | Produit |
+|---|---|---|
+| render | `https://gyutedy.github.io/LACRIMAE-FULL/f03/` | `codex_render.json` |
+| postprod | `https://gyutedy.github.io/LACRIMAE-FULL/f07/` | `codex_postprod.json` |
 
-```bash
-python3 F04_HEISENBERG/CODEBASE/heisenberg.py \
-  --input F03_PICTOR/OUT/pur_A01_look.mp4 \
-  --manifest BRIDGE_PERTURABO/OUT/pur_manifest.json \
-  --out F04_HEISENBERG/OUT
-```
+Les deux sortent un fichier **telecharge**, puis l'action `codex_write.yml`
+le commite dans `REVIEW/`. Aucune ecriture disque locale n'est requise : la
+review doit tourner sur GitHub, pas sur un sandbox.
 
-Pas de JSON advisory. Pas de scale anime. Si Heisenberg ne sort pas un
-MP4 lisible, le job echoue.
+## 7. Le watermark
 
-## Etape 6 — F05 / F06
+- Le **PNG** vient du pack : `watermark.file` (bundle par MARK1, `required: true`).
+- La **place, la taille et l'opacite** viennent de `codex_render.logo`.
+- Il est dessine par `F01_LOOK` (calque logo Remotion). Il ne va **jamais**
+  en post-prod.
 
-Camouflage puis luther. Livrable pret publication.
+## 8. Interdits V1
 
-## Multi-videos
+b-roll · SFX · flash blanc · jump cut · zoom / swell / breathing_zoom ·
+`split_scene` · Heisenberg dans le flux · ranking / reveal / hybrid ·
+music timeline · selecteur de clip · texte de titre dans un codex ·
+corriger le pack ou un titre cote LACRIMAE.
 
-1 codex = N videos = 1 run. Un asset manque → zip refuse.
+## 9. En cas de probleme
 
-## Rappels
-
-- Pack intouchable cote LACRIMAE.
-- Zoom banni.
-- Punch-in = cut, pas animation.
-- Voix ON. Rendu muet refuse.
-- Pas de CTA. Finir sur la chute.
+| Symptome | Cause reelle | Action |
+|---|---|---|
+| `G0` echoue | pack incomplet | retour PERTURABO |
+| `G0-S` exit 2 | style absent / infere / `split_scene` | le pack doit declarer `blur` ou `reframing` |
+| `W1-R` refuse | `codex_render.json` absent ou `validated_by_magos: false` | refaire la review render |
+| `PP1` refuse | `codex_postprod.json` absent ou non valide | refaire la review postprod |
+| `ffmpeg: command not found` | PATH (L10) | ajouter `C:\ffmpeg\bin` |
+| `UnicodeEncodeError` | console cp1252 (L1) | corrige, ne doit plus arriver |
+| `CLIP PUR MANQUANT` | F00_SOURCE pas lance | etape F00 |
+| Titre faux a l'ecran | defaut du pack (M1) | **PERTURABO**, pas ici |
+| Pas de logo a l'ecran | PNG absent du pack ou `logo.enabled: false` | verifier `watermark.file` |
+| Zoom visible | P-ZOOM ZERO | revert, ne pas livrer |
+| Sous-titres flous | ordre post-prod inverse | PP2 : glow avant caption |

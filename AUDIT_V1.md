@@ -159,19 +159,22 @@ OUT/*.mp4
 
 | # | Constat | Sévérité | Corrigé ? |
 |---|---|---|---|
-| M1 | titres hachés | haute | non |
+| M1 | titres hachés | haute | **PROPRIETE PERTURABO** (le bras armé rend ce que le pack donne) |
 | M2 | directive_path local | moyenne | non |
 | M3 | vod_url absente | haute | **RESOLU** par l adaptateur (--vod-url) |
 | M4 | format mark1 vs pur | haute | **CORRIGE** (BRIDGE/lac_adapter_mark1.py) |
 | L1 | crash « → » cp1252 | haute | **CORRIGE** (run_all.py reconfigure UTF-8) |
 | L2 | node_modules absent | blocante | **CORRIGE** (253 paquets, remotion 4.0.533) |
-| L3 | review absent | moyenne | toléré |
+| L3 | review absent | moyenne | **SUPERSEDE** par les 2 codex commites (PLAN_CODEX_V1) |
 | L4 | workflow mauvais repo | blocante | **CORRIGE** (gyutedy/PERTURABO, pari-forge) |
 | L5 | fixture sans MP4 | moyenne | non |
-| L6 | python3 vs python | basse | non |
+| L6 | python3 vs python | basse | **CORRIGE** (docs alignees : python) |
 | L7 | `allow-scripts` global casse npm | blocante | **CONTOURNE** (allowScripts[] + env -u) |
-| L8 | codex.json lu mais jamais applique | **haute** | non — le moteur ignore titres/watermark |
-| L9 | CI pointe des dossiers inexistants | **blocante** | non |
+| L8 | codex.json lu mais jamais applique | **haute** | non — planifie : PR4 rend le codex autoritaire |
+| L9 | CI pointe des dossiers inexistants | **blocante** | non — planifie : PR2 |
+| L10 | ffmpeg/ffprobe hors PATH | **blocante (local)** | non — `C:\ffmpeg\bin` present mais hors PATH |
+| L11 | docs b-roll/SFX/flash fausses | moyenne | **CORRIGE** (PR1, erratum CDC) |
+| L12 | watermark jete par l adaptateur + le converter | **haute** | non — planifie : PR4 |
 
 ---
 
@@ -279,12 +282,79 @@ Ainsi, meme avec `pack_url` correct, le job CI echouerait au premier appel de
 fichier absent. Le workflow n'a jamais ete aligne sur la disposition reelle
 des fregates de la branche `sanguinala-v1`.
 
+### L10 — `ffmpeg` et `ffprobe` hors du PATH (2026-11-17)
+
+Sur la machine de l'operateur, `command -v ffmpeg` repond
+`command not found`, alors que le binaire existe (`C:\ffmpeg\bin\ffmpeg.exe`,
+plus une copie fournie par `imageio-ffmpeg`).
+
+`run_all.py` appelle `"ffmpeg"` en **nom nu** (lignes 161, 182, 200), donc
+tout rendu local echoue avant meme d'atteindre une porte de contenu. Le
+paquet `imageio-ffmpeg` installe n'est pas utilise par le code.
+
+**Consequence** : un operateur qui clone et lance `run_all.py` sans avoir
+bricole son PATH croit que le pack est refuse, alors que c'est l'outil qui
+manque. Même famille de piege que L1 (l'erreur n'est pas celle qu'on croit).
+
+**Correction attendue (PR2)** : `ffmpeg` dans le PATH du job Actions, et
+resolution explicite du binaire (variable `FFMPEG_BIN`, repli
+`imageio_ffmpeg.get_ffmpeg_exe()`) plutot qu'un nom nu.
+
+### L11 — Les docs declarent du b-roll et des SFX qui n'existent pas (2026-11-17)
+
+Trois documents decrivent une V1 qui n'existe ni dans le code ni dans le pack :
+
+| Document | Ce qu'il annonce | Realite |
+|---|---|---|
+| `TRACKING/SANGUINALA_CDC_V3.html` | livrables V1 : « b-roll avec flash blanc + SFX au debut de chaque b-roll » | aucun champ `broll`/`sfx`/`flash` dans le pack MARK1 ; `F02_MONTAGE` = `shutil.copy2` |
+| `README.md` | `[F02_MONTAGE] b-roll + flash + SFX` | idem |
+| `TRACKING/PUR_GATES.md` porte M1 | « b-roll aux temps du pack, flash [0,04;0,5] s, SFX debut » | porte inapplicable : rien a monter |
+
+**Consequence** : un operateur qui lit la porte M1 cherche une fonctionnalite
+qui n'existe pas, et conclut que le rendu est casse.
+
+**Corrige le 2026-11-17 (PR1)** : `F02_MONTAGE` documente comme
+**passthrough assume**, porte M1 reecrite, erratum date en tete du CDC V3.
+
+### L12 — Le watermark du pack est jete trois fois (2026-11-17)
+
+Le pack MARK1 **porte** le watermark :
+
+```json
+"watermark": { "file": "production_pack_mark1_e99bd523.png",
+               "opacity": 0.8, "position": "centered",
+               "size_pct": 15, "required": true, "bundled": true }
+```
+
+Il est perdu a chaque etape du transport :
+
+| Etape | Verifie | Resultat |
+|---|---|---|
+| `BRIDGE/CODEBASE/lac_adapter_mark1.py` | `grep watermark` = 0 | le pack PUR mono-clip ne porte **pas** `watermark` |
+| `tools/convert_pur_pack.mjs` | `grep watermark` = 0 | le manifeste ne porte **pas** de watermark |
+| `F03_PREVIEW/src/preview/bridgeClipper.js` | `grep watermark` = 0 | l'entree non plus |
+| `_purPackComposition.jsx` | `grep watermark` = 0 | **aucun moteur ne dessine le PNG** |
+
+La preview ne dessine que des reperes DOM par-dessus le player
+(`App.jsx:371-412`) : ca ne part jamais dans le MP4. Or le pack declare
+`required: true`.
+
+**Correction attendue (PR4)** : le PNG reste la **matiere** (il vient du pack,
+via `watermark.file`), la place/taille/opacite viennent du
+`codex_render.logo`, et le rendu est fait par un calque logo Remotion
+(`LogoOverlay`, recupere de la branche `dev8` via
+`TRACKING/SALVAGE/review_dev8/CODEBASE/src/preview/OmniComposition.jsx`).
+
 ### Restent ouverts
 | # | Constat | Note |
 |---|---|---|
-| M1 | titres haches | non corrige : MARK1 ne mesure pas la grammaticalite |
-| M2 | directive_path local | non corrige : chemins absolus dans le pack |
-| L2 | node_modules absent | prerequis : `npm install` dans F01_LOOK/CODEBASE |
-| L3 | review absent | decision a prendre : exiger le review ? |
 | L5 | fixture sans MP4 | utiliser un vrai VOD ou `--look-dir` |
-| L6 | python3 vs python | coherence du README |
+| L8 | codex jamais applique | PR4 |
+| L9 | CI pointe des dossiers inexistants | PR2 |
+| L10 | ffmpeg hors PATH | PR2 |
+| L12 | watermark jete | PR4 |
+
+Reattribues hors de cette branche : **M1** (titres haches) et **M2**
+(`directive_path` local) sont des defauts du **pack**, donc PERTURABO.
+
+Plan d'execution de ces constats : `TRACKING/PLAN_CODEX_V1.md`.
