@@ -290,3 +290,13 @@ Le codex n'est plus un fichier decoratif : il traverse jusqu'au MP4.
 - Verifie localement : pack MARK1 3 clips -> 3 livrables `OUT/A0*.mp4`,
   `G-PACK OK`. Mesure du logo dans le livrable : 14,8 % de la largeur (codex
   15 %), centre (540, 960) sur 1080x1920.
+
+- **Run GitHub Actions `44191005402` vert** (pack MARK1 `e99bd523`, VOD
+  Twitch `2927914500`) : prepare (codex `--gate` OK, PNG watermark 47 799 o
+  recupere depuis l'EXPORT, manifeste `source: codex`, logo `centered 15 %`) ->
+  render A01/A02/A03 (le moteur copie le PNG et rend) -> aggregate F05/F06.
+  Artefacts : `pur-result-A01` 36,1 Mo, `A02` 28,3 Mo, `A03` 41,8 Mo,
+  `pur-bundle` 85,8 Mo.
+- Le manifeste du run porte bien : `style: blur / source: codex`,
+  `style_params` du codex, `narrative.overlay.style_params` du codex, texte du
+  titre **du pack**, et `narrative.logo` avec le PNG du pack.
