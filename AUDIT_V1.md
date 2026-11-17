@@ -170,6 +170,8 @@ OUT/*.mp4
 | L5 | fixture sans MP4 | moyenne | non |
 | L6 | python3 vs python | basse | non |
 | L7 | `allow-scripts` global casse npm | blocante | **CONTOURNE** (allowScripts[] + env -u) |
+| L8 | codex.json lu mais jamais applique | **haute** | non — le moteur ignore titres/watermark |
+| L9 | CI pointe des dossiers inexistants | **blocante** | non |
 
 ---
 
@@ -234,6 +236,48 @@ policy CLI et `throw`. Solution : declarer `allowScripts[]` dans
                                     *02:52:08.000-02:52:38.000 sur la VOD
 
 Il ne reste QUE le telechargement du segment et le rendu.
+
+
+### L8 — Le codex.json est lu mais JAMAIS applique au rendu (2026-11-17)
+
+Question posee : « le moteur de rendu recoit-il bien le codex.json ? »
+Reponse verifiee dans le code : **non, dans aucun des deux chemins.**
+
+**Chemin local (`run_all.py`)** : `merge_review()` lit bien `REVIEW/codex.json`
+et fusionne `titles`/`watermark`/`look` dans `style_pack`, puis ecrit
+`WORK/style_pack.json`. MAIS rien en aval ne consomme ces cles :
+
+| Etape | Ce qu'elle lit de style_pack | Applique titres ? | Applique watermark ? |
+|---|---|---|---|
+| F02_MONTAGE `montage.py` | rien (stub : copie le fichier) | non | non |
+| F03_POSTPROD `postprod.py` | `caption`, `glow`, `lut`, `fade_out` | non | non |
+| `apply_look_blur` (run_all) | rien : `gblur=sigma=20` code en dur | non | non |
+
+Le seul moteur qui DESSINE du texte est Remotion
+(`render_pictor.mjs` -> `PurLook.jsx` -> `_purPackComposition.jsx`), et il
+lit les overlays depuis le **manifeste** (`narrative.overlay`), pas depuis le
+codex. Or `F01_MJS` est declare dans `run_all.py` **ligne 34 et jamais
+appele** : le chemin local utilise `apply_look_blur` (ffmpeg nu, zero texte).
+
+**Chemin CI (`dev10_pur_render.yml`)** : ne mentionne `codex`/`review` nulle
+part (`grep` = 0). Il repart du pack via `convert_pur_pack.mjs`. Tes
+ajustements de preview n'y arrivent pas.
+
+### L9 — Le workflow CI pointe des dossiers INEXISTANTS (2026-11-17)
+
+Le workflow appelle des chemins qui n'existent pas sur cette branche :
+
+| Chemin dans le workflow | Existe sur la branche ? | Reel |
+|---|---|---|
+| `F00_PUR/CODEBASE/f00_pur.py` | **ABSENT** | `F00_SOURCE/CODEBASE/f00_pur.py` |
+| `F03_PICTOR/CODEBASE/render_pictor.mjs` | **ABSENT** | `F01_LOOK/CODEBASE/render_pictor.mjs` |
+| `F05_CAMOUFLAGE/CODEBASE/lac_f05_camouflage.py` | **ABSENT** | `F05/CODEBASE/lac_f05_camouflage.py` |
+| `F04_HEISENBERG/...` | OK | — |
+| `F06_LUTHER/...` | OK | — |
+
+Ainsi, meme avec `pack_url` correct, le job CI echouerait au premier appel de
+fichier absent. Le workflow n'a jamais ete aligne sur la disposition reelle
+des fregates de la branche `sanguinala-v1`.
 
 ### Restent ouverts
 | # | Constat | Note |
