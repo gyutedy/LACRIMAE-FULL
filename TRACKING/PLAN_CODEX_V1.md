@@ -100,7 +100,7 @@ Schema `sanguinala.postprod.codex.v1`.
 | PR | Contenu | Sortie verifiable |
 |---|---|---|
 | **PR1** | Docs vraies (ce document + 9 docs alignes) | aucun code modifie |
-| **PR2** | Route Actions reparee (chemins `F00_SOURCE` / `F01_LOOK` / `F05`) + `ffmpeg` dans le PATH du job | le job va jusqu'a `CLIP PUR MANQUANT`, plus de 404 |
+| **PR2** | Route Actions reparee (chemins `F00_SOURCE` / `F01_LOOK` / `F05`, `BRIDGE/PUR` mono-clip, Heisenberg retire) + `ffmpeg` dans le PATH du job et `tools/ffmpeg_bin.py` | **FAIT** — le job va jusqu'a `CLIP PUR MANQUANT`, plus de 404 |
 | **PR3** | Contrat des 2 codex : schemas, exemples, normaliseurs, tests, sortie du `.gitignore` | champ manquant -> refus ; `validated_by_magos:false` -> exit 2 |
 | **PR4** | Le moteur applique `codex_render` : `run_all.py` appelle Remotion, `apply_look_blur` supprime, `LogoOverlay` porte, watermark propage depuis le pack | 1 pack -> N MP4 en `OUT/` : titre + logo, 0 sous-titre |
 | **PR5** | Post-prod applique `codex_postprod` + inversion `GLOW -> CAPTION` | glow applique, sous-titres non floutes |

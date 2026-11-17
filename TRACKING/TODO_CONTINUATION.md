@@ -18,7 +18,7 @@
 | preview postprod (F07) | live | `f07/` sur Pages |
 | **Le codex commande le moteur** | **PAS FAIT** | `run_all.py:34` definit `F01_MJS`, jamais appele ; `apply_look_blur` code `sigma=20` en dur (AUDIT **L8**) |
 | **Le watermark atteint le MP4** | **PAS FAIT** | le PNG est jete par l'adaptateur et le converter (AUDIT **L12**) |
-| **La CI sait rendre** | **PAS FAIT** | le workflow pointe `F00_PUR/`, `F03_PICTOR/`, `F05_CAMOUFLAGE/` : inexistants (AUDIT **L9**) |
+| **La CI sait rendre** | **route reparee (PR2)**, jamais lancee sur un vrai VOD | le workflow pointait `F00_PUR/`, `F03_PICTOR/`, `F05_CAMOUFLAGE/` : inexistants (AUDIT **L9**, corrige) |
 | Un MP4 livre | **aucun** | `OUT/` vide, `F00_SOURCE/OUT/` vide |
 
 Conclusion : la chaine est validee **jusqu'a la porte**, pas jusqu'au MP4.
@@ -43,14 +43,16 @@ branchement du moteur sur le codex, la survie du watermark, et la route CI.
 | PR | Contenu | Etat |
 |---|---|---|
 | PR1 | docs vraies (ce fichier + 9 docs + `PLAN_CODEX_V1.md`) | FAIT |
-| PR2 | route Actions reparee + `ffmpeg` dans le PATH du job | a faire |
+| PR2 | route Actions reparee + `ffmpeg` dans le PATH du job | **fait** |
 | PR3 | contrat des 2 codex (schemas, normaliseurs, tests, `.gitignore`) | a faire |
 | PR4 | le moteur applique `codex_render` (Remotion branche, logo, watermark propage) | a faire |
 | PR5 | post-prod applique `codex_postprod` + inversion `GLOW -> CAPTION` | a faire |
 | PR6 | review en ligne ecrit les 2 codex (`codex_write.yml`) | a faire |
 
-Prochain pas concret : **PR2**. Tant que la CI appelle des dossiers
-inexistants, aucun test de bout en bout n'est possible.
+Prochain pas concret : **PR3** (contrat des deux codex). La route CI est
+reparee et testee en local jusqu'a `pur_aggregate`, mais elle n'a jamais
+tourne sur GitHub sur un vrai VOD : ce premier run reel appartient a PR4, une
+fois le moteur branche sur `codex_render`.
 
 ## 4. Ce qui n'appartient PAS a cette branche
 

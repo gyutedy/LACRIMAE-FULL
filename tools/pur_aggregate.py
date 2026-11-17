@@ -10,8 +10,11 @@ Usage :
   python3 tools/pur_aggregate.py \
     --manifest pur_manifest.json \
     --results RUNNER_TEMP/results \
-    --out F03_PICTOR/OUT \
-    [--report F03_PICTOR/OUT/pur_aggregate_report.json]
+    --out OUT \
+    [--report OUT/pur_aggregate_report.json]
+
+V1 : les runners publient `pur_<angle>_look.mp4` (le LOOK est terminal, pas de
+Heisenberg). L'agregateur accepte aussi les noms historiques `_finale`.
 
 Code de sortie 0 = bundle complet publié ; 1 = incomplet, RIEN n'est publié.
 
@@ -28,6 +31,18 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+# L1 (AUDIT_V1) : la console Windows est en cp1252 et ne sait pas encoder les
+# caracteres de cadre des logs -> crash avant l'agregation. Meme correctif que
+# run_all.py : UTF-8 avec repli tolerant.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ffmpeg_bin import FFPROBE  # noqa: E402  (AUDIT_V1 L10 : ffprobe hors PATH)
 
 
 def now() -> str:
@@ -50,7 +65,7 @@ def normalize_angle(raw) -> str:
 def probe(path: Path) -> dict:
     try:
         data = json.loads(subprocess.check_output(
-            ["ffprobe", "-v", "error", "-show_entries",
+            [FFPROBE, "-v", "error", "-show_entries",
              "stream=codec_name,codec_type,width,height:format=duration",
              "-of", "json", str(path)], text=True))
         video = next((s for s in data.get("streams", []) if s.get("codec_type") == "video"), None)
@@ -67,17 +82,27 @@ def probe(path: Path) -> dict:
 
 
 def find_result(results_dir: Path, angle_id: str) -> Path | None:
-    """Retrouve le MP4 du runner pour un angle (pur_<angle>_finale.mp4 ou variante)."""
+    """Retrouve le MP4 du runner pour un angle.
+
+    V1 : le rendu s'arrete au LOOK (pas de Heisenberg), donc le fichier
+    attendu est `pur_<angle>_look.mp4`. On garde les noms historiques
+    (`_finale.mp4`, `pur_<angle>.mp4`) pour ne rien casser.
+    """
     if not results_dir.exists():
         return None
+    ang = angle_id.lower()
     candidates = []
     for p in results_dir.rglob("*.mp4"):
         stem = p.stem.lower()
-        if stem == f"pur_{angle_id.lower()}_finale" or stem == f"pur_{angle_id.lower()}" \
-           or stem.endswith(f"_{angle_id.lower()}_finale"):
+        if stem in {f"pur_{ang}_finale", f"pur_{ang}", f"pur_{ang}_look"} \
+           or stem.endswith(f"_{ang}_finale"):
             candidates.append(p)
-    # Préférence : le *_finale.mp4 exact, puis le plus gros fichier (rendu complet)
-    candidates.sort(key=lambda p: (not p.stem.lower().endswith("_finale"), -p.stat().st_size))
+    # Préférence : *_finale.mp4, puis *_look.mp4 (V1), puis le plus gros fichier
+    candidates.sort(key=lambda p: (
+        0 if p.stem.lower().endswith("_finale")
+        else 1 if p.stem.lower().endswith("_look") else 2,
+        -p.stat().st_size,
+    ))
     return candidates[0] if candidates else None
 
 
@@ -98,6 +123,7 @@ def main() -> int:
 
     results: list[dict] = []
     missing: list[str] = []
+    unreadable: list[str] = []
     args.out.mkdir(parents=True, exist_ok=True)
 
     for entry in entries:
@@ -109,6 +135,15 @@ def main() -> int:
             print(f"  [✗] {angle} : rendu absent ou vide")
             continue
         meta = probe(found)
+        # Un ffprobe en echec n'est PAS un rendu muet : c'est un rendu illisible
+        # (binaire absent, fichier tronque). Deux causes, deux messages — sinon
+        # on annonce « voix absente » pour un probleme d'outillage (AUDIT_V1 L10).
+        if meta.get("error"):
+            unreadable.append(angle)
+            results.append({"angle_id": angle, "status": "PROBE_FAILED", "probe": meta,
+                            "file": found.name, "expected_clip": entry.get("clip_file")})
+            print(f"  [✗] {angle} : illisible par ffprobe ({meta['error'][:120]})")
+            continue
         # Porte P-AUD (2026-09-11, décision Warsmith) : la voix du clip est
         # obligatoire (codex : « voix claire » hook) — un rendu sans piste
         # audio est un rendu muet, refusé comme un rendu manquant.
@@ -136,7 +171,7 @@ def main() -> int:
         })
         print(f"  [✓] {angle} : {dest.name} ({dest.stat().st_size / 1e6:.1f} Mo, {meta.get('duration_seconds')}s)")
 
-    complete = len(missing) == 0
+    complete = len(missing) == 0 and len(unreadable) == 0
     report = {
         "schema_version": "dev10.pur-aggregate.v1",
         "generated_at": now(),
@@ -144,6 +179,7 @@ def main() -> int:
         "expected_count": len(entries),
         "rendered_count": sum(1 for r in results if r["status"] == "OK"),
         "missing": missing,
+        "unreadable": unreadable,
         "complete": complete,
         "doctrine": "1 codex = N vidéos = 1 run = 1 zip — publication refusée si incomplet",
         "results": results,
@@ -153,7 +189,12 @@ def main() -> int:
     report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     if not complete:
-        print(f"\n═══ AGRÉGATION INCOMPLÈTE : {len(missing)} rendu(s) manquant(s) {missing} ═══")
+        detail = []
+        if missing:
+            detail.append(f"{len(missing)} manquant(s) {missing}")
+        if unreadable:
+            detail.append(f"{len(unreadable)} illisible(s) {unreadable}")
+        print(f"\n═══ AGRÉGATION INCOMPLÈTE : {' + '.join(detail)} ═══")
         print("  → AUCUN bundle final ne sera publié (règle dev9 conservée).")
         return 1
 

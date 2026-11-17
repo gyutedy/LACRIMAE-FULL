@@ -171,8 +171,8 @@ OUT/*.mp4
 | L6 | python3 vs python | basse | **CORRIGE** (docs alignees : python) |
 | L7 | `allow-scripts` global casse npm | blocante | **CONTOURNE** (allowScripts[] + env -u) |
 | L8 | codex.json lu mais jamais applique | **haute** | non — planifie : PR4 rend le codex autoritaire |
-| L9 | CI pointe des dossiers inexistants | **blocante** | non — planifie : PR2 |
-| L10 | ffmpeg/ffprobe hors PATH | **blocante (local)** | non — `C:\ffmpeg\bin` present mais hors PATH |
+| L9 | CI pointe des dossiers inexistants | **blocante** | **corrige (PR2)** |
+| L10 | ffmpeg/ffprobe hors PATH | **blocante (local)** | **corrige (PR2)** : `tools/ffmpeg_bin.py` |
 | L11 | docs b-roll/SFX/flash fausses | moyenne | **CORRIGE** (PR1, erratum CDC) |
 | L12 | watermark jete par l adaptateur + le converter | **haute** | non — planifie : PR4 |
 
@@ -282,6 +282,35 @@ Ainsi, meme avec `pack_url` correct, le job CI echouerait au premier appel de
 fichier absent. Le workflow n'a jamais ete aligne sur la disposition reelle
 des fregates de la branche `sanguinala-v1`.
 
+**CORRIGE (PR2).** Le workflow a ete reecrit sur la route reelle :
+
+| Avant | Apres |
+|---|---|
+| `BRIDGE_PERTURABO/` | `BRIDGE/` |
+| `F00_PUR/` | `F00_SOURCE/` |
+| `F03_PICTOR/` | `F01_LOOK/` |
+| `F05_CAMOUFLAGE/` | `F05/` |
+| `F04_HEISENBERG` dans le flux | **retire** (V1 = pas de jump cut) |
+| `style` proposait `split_scene` | `blur` / `reframing` seulement (G0-S) |
+
+Trois autres trous de la meme route ont ete bouches au passage :
+
+1. **Aucun pack par angle.** `f00_pur.py` exige UN pack = UN segment, alors
+   qu'un pack MARK1 porte N clips. `convert_pur_pack.mjs` ecrit desormais des
+   packs PUR mono-clip (`--packs-out BRIDGE/PUR`), produits par
+   `expandSanguinalaPack()` : le pack MARK1 reste la seule source de verite,
+   on ne fait que le decouper (aucun champ invente, aucun titre touche).
+2. **La matrice n'avait pas de pack a passer.** Elle vient maintenant des
+   packs mono-clip (`angle`, `pack`, `index`) et refuse si le nombre de packs
+   differe du nombre d'entrees du manifeste.
+3. **`sfxDir` pointait `F03_PICTOR/CODEBASE/public/sfx`** (mort) — corrige en
+   `F01_LOOK/...`.
+
+Verifie localement sur une fixture MARK1 a 3 clips : 3 packs mono-clip ecrits
+(`production_pack_pur_e99bd523_A0{1,2,3}.json`), chacun passe **G0 PACK** en
+`--dry-run`, matrice a 3 entrees coherente, et `pur_aggregate` retrouve bien
+les `pur_<angle>_look.mp4`.
+
 ### L10 — `ffmpeg` et `ffprobe` hors du PATH (2026-11-17)
 
 Sur la machine de l'operateur, `command -v ffmpeg` repond
@@ -296,9 +325,28 @@ paquet `imageio-ffmpeg` installe n'est pas utilise par le code.
 bricole son PATH croit que le pack est refuse, alors que c'est l'outil qui
 manque. Même famille de piege que L1 (l'erreur n'est pas celle qu'on croit).
 
-**Correction attendue (PR2)** : `ffmpeg` dans le PATH du job Actions, et
-resolution explicite du binaire (variable `FFMPEG_BIN`, repli
-`imageio_ffmpeg.get_ffmpeg_exe()`) plutot qu'un nom nu.
+**CORRIGE (PR2).** Nouveau module unique `tools/ffmpeg_bin.py` :
+`FFMPEG` / `FFPROBE` sont resolus dans cet ordre — `<NOM>_BIN` (et
+`FFMPEG_BIN`), PATH, binaire livre par `imageio-ffmpeg`, puis
+`FFMPEG_DIR` / `C:\ffmpeg\bin` / `/usr/local/bin` / `/opt/homebrew/bin`.
+Tous les appels en nom nu ont disparu de la route CI : `run_all.py`,
+`tools/pur_aggregate.py`, `F05/CODEBASE/lac_f05_camouflage.py`,
+`F06_LUTHER/CODEBASE/lac_f06_luther.py`.
+
+Verifie sur la machine : `FFMPEG` = binaire `imageio-ffmpeg` 7.1,
+`FFPROBE` = `C:\ffmpeg\bin\ffprobe.exe`, les deux repondent `-version`.
+
+**Defaut secondaire revele par ce constat.** `pur_aggregate.py` transformait
+un `ffprobe` en echec en « piste audio ABSENTE » : un probleme d'outillage
+etait annonce comme un rendu muet, donc comme un defaut du pack. Les deux
+causes sont maintenant separees (`PROBE_FAILED` vs `NO_AUDIO`) et le rapport
+porte une liste `unreadable`. Le meme fichier crashait aussi en cp1252 sur la
+console Windows avant d'agreger quoi que ce soit (famille **L1**) :
+stdout/stderr sont reconfigures en UTF-8 comme dans `run_all.py`.
+
+Non corrige (assume) : `lac_f05_camouflage.py` echoue si le clip fait moins
+de 3 s, `loudnorm` ne pouvant pas mesurer une loudness sur un extrait plus
+court. Les clips V1 font 30 s ; le message reste « Conversion failed! ».
 
 ### L11 — Les docs declarent du b-roll et des SFX qui n'existent pas (2026-11-17)
 
@@ -350,9 +398,9 @@ via `watermark.file`), la place/taille/opacite viennent du
 |---|---|---|
 | L5 | fixture sans MP4 | utiliser un vrai VOD ou `--look-dir` |
 | L8 | codex jamais applique | PR4 |
-| L9 | CI pointe des dossiers inexistants | PR2 |
-| L10 | ffmpeg hors PATH | PR2 |
 | L12 | watermark jete | PR4 |
+
+Corriges : **L9** et **L10** en PR2, **L11** en PR1, **L3** et **L6** en PR1.
 
 Reattribues hors de cette branche : **M1** (titres haches) et **M2**
 (`directive_path` local) sont des defauts du **pack**, donc PERTURABO.

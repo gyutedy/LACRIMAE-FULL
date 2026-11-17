@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -28,6 +29,9 @@ for _stream in (sys.stdout, sys.stderr):
 ROOT = Path(__file__).resolve().parent
 ALLOWED_STYLES = {"blur", "reframing"}
 MAX_SEGMENT = 150.0
+
+sys.path.insert(0, str(ROOT / "tools"))
+from ffmpeg_bin import FFMPEG, FFPROBE  # noqa: E402  (AUDIT_V1 L10)
 
 BRIDGE_PY = ROOT / "BRIDGE" / "CODEBASE" / "lac_bridge_forge.py"
 F00_PY = ROOT / "F00_SOURCE" / "CODEBASE" / "f00_pur.py"
@@ -53,33 +57,49 @@ def run(cmd: list[str]) -> int:
 
 
 def gate_g0(pack: dict) -> int:
-    if pack.get("mode") != "pur":
-        log("G0 PACK FAIL: mode != pur")
+    """G0 PACK — accepte les deux formes reellement produites.
+
+    - pack MARK1 (PERTURABO) : `mode: mark1`, bornes A PLAT sur l'asset
+      (`asset.start_sec` / `asset.end_sec`).
+    - pack PUR adapte : `mode: pur`, bornes dans
+      `asset.montage_instructions.segment`.
+
+    Avant ce correctif, seule une troisieme forme (mode pur + assets[] avec
+    montage_instructions a plat) passait : aucun producteur ne l'ecrit, donc
+    un pack MARK1 valide etait refuse avec le mauvais message (L13).
+    """
+    mode = pack.get("mode")
+    if mode not in ("pur", "mark1"):
+        log(f"G0 PACK FAIL: mode={mode!r} (attendu 'pur' ou 'mark1')")
         return 2
     source = pack.get("source") or {}
     vod = source.get("vod_url")
     assets = pack.get("assets")
-    if isinstance(assets, list) and assets:
-        if not vod:
-            log("G0 PACK FAIL: vod_url absente")
+    if not (isinstance(assets, list) and assets):
+        log("G0 PACK FAIL: assets[] absents (un pack mono-clip se rend par"
+            " BRIDGE + F00_SOURCE, pas par run_all)")
+        return 2
+    if not vod:
+        log("G0 PACK FAIL: vod_url absente")
+        return 2
+    for a in assets:
+        mi = a.get("montage_instructions") or {}
+        seg = mi.get("segment") or {}
+        start = a.get("start_sec", seg.get("start_sec", mi.get("start_sec")))
+        end = a.get("end_sec", seg.get("end_sec", mi.get("end_sec")))
+        if start is None or end is None:
+            log(f"G0 PACK FAIL: {a.get('id')} bornes absentes"
+                " (start_sec/end_sec ni a plat ni dans montage_instructions.segment)")
             return 2
-        for a in assets:
-            mi = a.get("montage_instructions") or {}
-            start = float(mi.get("start_sec", -1))
-            end = float(mi.get("end_sec", -1))
-            if start >= end:
-                log(f"G0 PACK FAIL: {a.get('id')} start_sec >= end_sec")
-                return 2
-            if end - start > MAX_SEGMENT:
-                log(f"G0 PACK FAIL: {a.get('id')} segment > {MAX_SEGMENT}s")
-                return 2
-            if not mi:
-                log(f"G0 PACK FAIL: {a.get('id')} montage_instructions absentes")
-                return 2
-        log(f"G0 PACK OK: {len(assets)} assets")
-        return 0
-    log("G0 PACK FAIL: assets[] absents")
-    return 2
+        start, end = float(start), float(end)
+        if start >= end:
+            log(f"G0 PACK FAIL: {a.get('id')} start_sec >= end_sec")
+            return 2
+        if end - start > MAX_SEGMENT:
+            log(f"G0 PACK FAIL: {a.get('id')} segment > {MAX_SEGMENT}s")
+            return 2
+    log(f"G0 PACK OK: {mode} — {len(assets)} assets")
+    return 0
 
 
 def gate_g0s(pack: dict, style_arg: str | None) -> int:
@@ -99,7 +119,7 @@ def assets_of(pack: dict) -> list[dict]:
 def probe_wh(path: Path) -> tuple[int, int, float]:
     r = subprocess.run(
         [
-            "ffprobe", "-v", "error", "-select_streams", "v:0",
+            FFPROBE, "-v", "error", "-select_streams", "v:0",
             "-show_entries", "stream=width,height,duration", "-of", "csv=p=0", str(path),
         ],
         capture_output=True,
@@ -116,7 +136,7 @@ def probe_wh(path: Path) -> tuple[int, int, float]:
             dur = 0.0
     if dur <= 0:
         d = subprocess.run(
-            ["ffprobe", "-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+            [FFPROBE, "-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
             capture_output=True,
             text=True,
         )
@@ -158,7 +178,7 @@ def download_segment(vod_url: str, start: float, end: float, dest: Path) -> int:
         return 2
     expected = max(0.5, end - start)
     trim = [
-        "ffmpeg", "-y", "-i", str(raw), "-t", f"{expected:.3f}",
+        FFMPEG, "-y", "-i", str(raw), "-t", f"{expected:.3f}",
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "128k", str(dest),
     ]
@@ -179,7 +199,7 @@ def apply_look_blur(src: Path, dst: Path) -> int:
         "[b][f]overlay=(W-w)/2:(H-h)/2[v]"
     )
     cmd = [
-        "ffmpeg", "-y", "-i", str(src),
+        FFMPEG, "-y", "-i", str(src),
         "-filter_complex", vf, "-map", "[v]", "-map", "0:a?",
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "128k",
@@ -197,7 +217,7 @@ def make_look_sample(path: Path, seconds: float) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     d = max(0.5, float(seconds))
     cmd = [
-        "ffmpeg", "-y",
+        FFMPEG, "-y",
         "-f", "lavfi", "-i", f"color=c=0x1a0a0a:s=1080x1920:d={d:.3f}:r=25",
         "-f", "lavfi", "-i", f"anullsrc=r=48000:cl=stereo",
         "-shortest",

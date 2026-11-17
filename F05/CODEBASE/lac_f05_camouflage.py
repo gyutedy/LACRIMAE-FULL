@@ -13,11 +13,14 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
+from ffmpeg_bin import FFMPEG, FFPROBE  # noqa: E402  (AUDIT_V1 L10)
+
 SUSPICIOUS = ("remotion", "manim", "lavf", "lavc", "libav", "python", "claude")
 
 
 def probe(path: Path) -> dict:
-    cmd = ["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", str(path)]
+    cmd = [FFPROBE, "-v", "error", "-print_format", "json", "-show_format", "-show_streams", str(path)]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode:
         raise RuntimeError(result.stderr[-1000:])
@@ -47,7 +50,7 @@ def suspicious(tags: dict) -> list[str]:
 
 
 def camouflage(source: Path, destination: Path, has_audio: bool) -> None:
-    cmd = ["ffmpeg", "-y", "-i", str(source), "-map", "0:v:0", "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p"]
+    cmd = [FFMPEG, "-y", "-i", str(source), "-map", "0:v:0", "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p"]
     if has_audio:
         cmd += ["-map", "0:a:0?", "-c:a", "aac", "-b:a", "192k", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11"]
     cmd += ["-map_metadata", "-1", "-metadata", "encoder=", "-movflags", "+faststart", str(destination)]

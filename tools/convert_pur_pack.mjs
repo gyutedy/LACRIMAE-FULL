@@ -14,7 +14,7 @@
  * Styles autorises V1 : blur | reframing. split_scene = V2+.
  * Infere = REFUS (exit 2). Ranking refuse.
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -34,9 +34,13 @@ const clip = get('--clip') || '';
 const fps = Number(get('--fps') || 30);
 const refManifest = get('--style-params') || '';
 const styleArg = get('--style');
+// --packs-out : ecrit un pack PUR mono-clip par angle. C'est ce que F00_SOURCE
+// consomme (f00_pur.py attend UN pack = UN segment). Sans ca, un pack MARK1
+// (N clips) n'a aucun pack par angle a donner a la fregate d'ingest.
+const packsOut = get('--packs-out') || '';
 
 if ((!packPath && !packsList) || !outPath) {
-  console.error('usage: convert_pur_pack.mjs (--pack <pack.json> | --packs <p1.json,p2.json,…>) --out <manifest.json> [--canvas 9:16] [--clip clips/x.mp4] [--fps 30] [--style blur|reframing] [--style-params ref_manifest.json]');
+  console.error('usage: convert_pur_pack.mjs (--pack <pack.json> | --packs <p1.json,p2.json,…>) --out <manifest.json> [--packs-out <dir>] [--canvas 9:16] [--clip clips/x.mp4] [--fps 30] [--style blur|reframing] [--style-params ref_manifest.json]');
   process.exit(1);
 }
 
@@ -73,6 +77,29 @@ const expand = (pack) => {
   return Array.isArray(out) && out.length ? out : [pack];
 };
 
+// Ecrit un pack PUR mono-clip par angle (mode:'pur' + source.start_sec/end_sec
+// + montage_instructions.segment), exactement ce que F00_SOURCE/CODEBASE/
+// f00_pur.py valide en G0. Le pack MARK1 reste la source de verite : on ne
+// fait que le decouper, sans rien inventer et sans toucher au titre.
+const writeMonoPacks = (packs, dir) => {
+  if (!dir) return;
+  const outDir = resolve(dir);
+  mkdirSync(outDir, { recursive: true });
+  for (const [i, pack] of packs.entries()) {
+    const angle = String(pack.identite?.angle_id || `clip${i + 1}`);
+    const rawId = String(pack.pack_id || pack.pack_token || 'sanguinala');
+    const token = rawId
+      .replace(new RegExp(`[-_]?${angle}$`, 'i'), '')
+      .replace(/^mark1_/i, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_') || 'sanguinala';
+    const mono = { ...pack, mode: 'pur', pack_id: `${token}-${angle}` };
+    const name = `production_pack_pur_${token}_${angle}.json`;
+    writeFileSync(resolve(outDir, name), JSON.stringify(mono, null, 2) + '\n');
+    console.log(`  ▸ pack mono-clip ${name} (${mono.pack_id})`);
+  }
+};
+
 const checkStyleDeclared = (pack, source) => {
   const declaredStyle = String(pack.montage_style || pack.montage_instructions?.metadata?.style || '').toLowerCase();
   if (declaredStyle && !ALLOWED_STYLES.has(declaredStyle) && !styleArg) {
@@ -107,6 +134,7 @@ let manifest;
 if (packsList) {
   const packPaths = packsList.split(',').map((s) => s.trim()).filter(Boolean);
   const packs = packPaths.flatMap((p) => expand(loadPack(p)));
+  writeMonoPacks(packs, packsOut);
   packs.forEach((pack, i) => checkStyleDeclared(pack, packPaths[0]));
   manifest = parsePurPackMulti(packs, {
     fps,
@@ -127,6 +155,7 @@ if (packsList) {
   }
 } else {
   const chunks = expand(loadPack(packPath));
+  writeMonoPacks(chunks, packsOut);
   chunks.forEach((c) => checkStyleDeclared(c, packPath));
   manifest = chunks.length > 1
     ? parsePurPackMulti(chunks, {
@@ -143,7 +172,7 @@ if (packsList) {
   console.log(`  style: ${manifest.style} (source: ${manifest.style_source}) — ${manifest.entries.length} video(s)`);
 }
 
-const sfxDir = resolve('F03_PICTOR/CODEBASE/public/sfx');
+const sfxDir = resolve('F01_LOOK/CODEBASE/public/sfx');
 const requiredSfx = [...new Set(manifest.entries
   .flatMap((e) => (e.sfx_list || []).map((s) => String(s.type || '')))
   .filter(Boolean))];

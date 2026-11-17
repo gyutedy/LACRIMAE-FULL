@@ -1,5 +1,15 @@
 name: DEV10-v2 — PUR render
 
+# Route SANGUINALA V1 (PR2) : pack -> N MP4.
+#   BRIDGE/IN   packs recuperes (MARK1 ou PUR)
+#   BRIDGE/PUR  un pack PUR mono-clip par angle (ecrit par convert_pur_pack.mjs)
+#   BRIDGE/OUT  pur_manifest.json (dev10.pur.v1)
+#   F00_SOURCE/OUT  segments VOD
+#   F01_LOOK/OUT    LOOK Remotion : style + titre du pack + logo (terminal en V1)
+#   OUT             bundle : N MP4 verifies (P-AGG / P-AUD)
+#   F05/OUT, F06_LUTHER/OUT  reencodage + LUT
+# Heisenberg n'est PAS appele : pas de jump cut, pas de SFX, pas de b-roll en V1.
+
 on:
   workflow_dispatch:
     inputs:
@@ -30,19 +40,15 @@ on:
         required: false
         default: "pari-forge-perturabo-xs4c"
       style:
-        description: "Style LOOK force (G0-S). Vide = style declare par le pack."
+        description: "Style LOOK (G0-S). blur | reframing seulement en V1."
         required: false
         default: "blur"
         type: choice
-        options: ["blur", "split_scene", "reframing"]
+        options: ["blur", "reframing"]
       max_parallel:
         description: "Jobs paralleles max"
         required: false
         default: "5"
-      max_duration:
-        description: "Duree max segment (info, G0 reste 150s)"
-        required: false
-        default: "60"
 
 concurrency:
   group: dev10-v2-pur-${{ github.ref }}
@@ -50,7 +56,7 @@ concurrency:
 
 jobs:
   prepare:
-    name: prepare (fetch + G0 + matrix)
+    name: prepare (fetch + G0 + packs mono-clip + matrix)
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
@@ -73,7 +79,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          mkdir -p BRIDGE_PERTURABO/IN BRIDGE_PERTURABO/OUT
+          mkdir -p BRIDGE/IN BRIDGE/PUR BRIDGE/OUT
           python3 - <<'PY'
           import json, os, urllib.request
           from pathlib import Path
@@ -89,7 +95,7 @@ jobs:
           if token:
               headers["Authorization"] = f"Bearer {token}"
 
-          dest = Path("BRIDGE_PERTURABO/IN")
+          dest = Path("BRIDGE/IN")
           dest.mkdir(parents=True, exist_ok=True)
 
           # VOIE 1 (nominale) : l operateur donne l URL exacte du pack.
@@ -107,7 +113,6 @@ jobs:
               print("fetched", name, f"({len(data)} o)")
 
           # VOIE 2 (repli explicite) : pack_filter, si l URL n est pas donnee.
-          # On liste le dossier, comme avant, mais uniquement sur demande.
           elif filt:
               api = (f"https://api.github.com/repos/{repo}/contents/{export}?ref={branch}")
               req = urllib.request.Request(api, headers={
@@ -141,11 +146,30 @@ jobs:
               path.write_text(json.dumps(pack, ensure_ascii=False, indent=2), encoding="utf-8")
               print(f"vod_url injecte dans {path.name}")
           PY
-      - name: Convert pack (G0-S)
+      - name: Adapter MARK1 (un seul pack source de verite)
         run: |
           set -euo pipefail
           shopt -s nullglob
-          PACKS=(BRIDGE_PERTURABO/IN/production_pack_*.json)
+          MARK1=(BRIDGE/IN/production_pack_mark1_*.json)
+          if [ ${#MARK1[@]} -gt 0 ]; then
+            for p in "${MARK1[@]}"; do
+              python3 BRIDGE/CODEBASE/lac_adapter_mark1.py --pack "$p" --out BRIDGE/IN
+            done
+            # Un pack MARK1 porte N clips : les packs PUR du meme token sont des
+            # derives du meme contenu. On les retire pour ne pas convertir 2 fois.
+            for p in BRIDGE/IN/production_pack_pur_*.json; do
+              echo "derive ignore (MARK1 present) : $p"
+              rm -f "$p"
+            done
+          else
+            echo "aucun pack MARK1 : packs PUR utilises tels quels"
+          fi
+          ls -la BRIDGE/IN
+      - name: Convert pack (G0-S + packs mono-clip)
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          PACKS=(BRIDGE/IN/production_pack_*.json)
           if [ ${#PACKS[@]} -eq 0 ]; then
             echo "aucun pack" >&2
             exit 1
@@ -153,25 +177,32 @@ jobs:
           JOIN=$(IFS=,; echo "${PACKS[*]}")
           node tools/convert_pur_pack.mjs \
             --packs "$JOIN" \
-            --out BRIDGE_PERTURABO/OUT/pur_manifest.json \
+            --out BRIDGE/OUT/pur_manifest.json \
+            --packs-out BRIDGE/PUR \
             --canvas "${{ github.event.inputs.canvas }}" \
             --style "${{ github.event.inputs.style }}"
-      - name: Build matrix
+      - name: Build matrix (1 angle = 1 pack mono-clip = 1 job)
         id: matrix
         run: |
           python3 - <<'PY'
           import json, os
           from pathlib import Path
-          man = json.loads(Path("BRIDGE_PERTURABO/OUT/pur_manifest.json").read_text())
+          man = json.loads(Path("BRIDGE/OUT/pur_manifest.json").read_text(encoding="utf-8"))
           entries = man.get("entries") or []
+          packs = sorted(Path("BRIDGE/PUR").glob("production_pack_*.json"))
+          if not packs:
+              raise SystemExit("aucun pack mono-clip dans BRIDGE/PUR (--packs-out ?)")
+          if len(packs) != len(entries):
+              raise SystemExit(
+                  f"derive : {len(entries)} entree(s) au manifeste vs {len(packs)} pack(s) mono-clip")
           items = []
-          for i, e in enumerate(entries):
-              raw = str(e.get("angle_id") or e.get("source_id") or f"clip{i+1}")
-              angle = raw[4:] if raw.lower().startswith("pur_") and len(raw) > 4 else raw
-              items.append({"index": i, "angle": angle})
-          if not items:
-              raise SystemExit("matrix vide")
+          for i, p in enumerate(packs):
+              pack = json.loads(p.read_text(encoding="utf-8"))
+              angle = (pack.get("identite") or {}).get("angle_id") or p.stem.rsplit("_", 1)[-1]
+              items.append({"index": i, "angle": angle, "pack": p.as_posix()})
           print("count", len(items))
+          for it in items:
+              print(" ", it["angle"], "->", it["pack"])
           with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
               fh.write("count=" + str(len(items)) + "\n")
               fh.write("matrix=" + json.dumps({"include": items}) + "\n")
@@ -180,8 +211,9 @@ jobs:
         with:
           name: pur-prepare
           path: |
-            BRIDGE_PERTURABO/IN/
-            BRIDGE_PERTURABO/OUT/pur_manifest.json
+            BRIDGE/IN/
+            BRIDGE/PUR/
+            BRIDGE/OUT/pur_manifest.json
 
   render:
     name: render ${{ matrix.angle }}
@@ -199,11 +231,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: ffmpeg + yt-dlp
+      - name: ffmpeg + yt-dlp (PATH verifie)
         run: |
+          set -euo pipefail
           sudo apt-get update -y
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ffmpeg
           pip3 install --break-system-packages yt-dlp
+          command -v ffmpeg && command -v ffprobe && command -v yt-dlp
+          ffmpeg -version | head -1
       - uses: actions/download-artifact@v4
         with:
           name: pur-prepare
@@ -211,47 +246,45 @@ jobs:
       - name: Restore prepare tree
         run: |
           set -euo pipefail
-          mkdir -p BRIDGE_PERTURABO/IN BRIDGE_PERTURABO/OUT
-          find RUNNER_TEMP/prepare -type f -print
-          find RUNNER_TEMP/prepare -name 'production_pack_*.json' -exec cp -f {} BRIDGE_PERTURABO/IN/ \;
-          find RUNNER_TEMP/prepare -name 'pur_manifest.json' -exec cp -f {} BRIDGE_PERTURABO/OUT/ \;
-          ls -la BRIDGE_PERTURABO/IN BRIDGE_PERTURABO/OUT
-      - name: F00_PUR segment
+          mkdir -p BRIDGE/IN BRIDGE/PUR BRIDGE/OUT
+          find RUNNER_TEMP/prepare -name 'production_pack_*.json' \
+            -path '*BRIDGE/IN*' -exec cp -f {} BRIDGE/IN/ \;
+          find RUNNER_TEMP/prepare -name 'production_pack_pur_*.json' \
+            -exec cp -f {} BRIDGE/PUR/ \;
+          find RUNNER_TEMP/prepare -name 'pur_manifest.json' -exec cp -f {} BRIDGE/OUT/ \;
+          ls -la BRIDGE/IN BRIDGE/PUR BRIDGE/OUT
+      - name: F00_SOURCE segment
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          PACKS=(BRIDGE_PERTURABO/IN/production_pack_*${{ matrix.angle }}*.json)
-          PACK=${PACKS[0]:-}
-          if [ -z "$PACK" ]; then
-            echo "pack introuvable pour ${{ matrix.angle }}" >&2
-            ls -la BRIDGE_PERTURABO/IN/ >&2 || true
-            exit 1
-          fi
-          python3 F00_PUR/CODEBASE/f00_pur.py --pack "$PACK" --out F00_PUR/OUT --clip-name "pur_${{ matrix.angle }}.mp4"
-      - name: F03_PICTOR LOOK
+          test -f "${{ matrix.pack }}"
+          python3 F00_SOURCE/CODEBASE/f00_pur.py \
+            --pack "${{ matrix.pack }}" \
+            --out F00_SOURCE/OUT \
+            --clip-name "pur_${{ matrix.angle }}.mp4"
+      - name: F01_LOOK LOOK (style + titre du pack + logo)
         run: |
           set -euo pipefail
-          cd F03_PICTOR/CODEBASE
+          cd F01_LOOK/CODEBASE
           npm ci --no-fund --no-audit
           npx remotion browser ensure
           node render_pictor.mjs \
-            --manifest ../../BRIDGE_PERTURABO/OUT/pur_manifest.json \
-            --clips ../../F00_PUR/OUT \
-            --out ../../F03_PICTOR/OUT \
+            --manifest ../../BRIDGE/OUT/pur_manifest.json \
+            --clips ../../F00_SOURCE/OUT \
+            --out ../../F01_LOOK/OUT \
             --entry ${{ matrix.index }}
-      - name: F04_HEISENBERG TEMPS
+      - name: Verifie le MP4 sorti
         run: |
-          python3 F04_HEISENBERG/CODEBASE/heisenberg.py \
-            --input F03_PICTOR/OUT \
-            --manifest BRIDGE_PERTURABO/OUT/pur_manifest.json \
-            --out F04_HEISENBERG/OUT \
-            --entry ${{ matrix.index }}
+          set -euo pipefail
+          MP4="F01_LOOK/OUT/pur_${{ matrix.angle }}_look.mp4"
+          test -s "$MP4" || { echo "rendu absent : $MP4" >&2; ls -la F01_LOOK/OUT >&2 || true; exit 1; }
+          ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height \
+            -of default=nw=1 "$MP4"
+          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name \
+            -of default=nw=1 "$MP4"
       - uses: actions/upload-artifact@v4
         with:
           name: pur-result-${{ matrix.angle }}
-          path: |
-            F04_HEISENBERG/OUT/pur_${{ matrix.angle }}.mp4
-            F03_PICTOR/OUT/pur_${{ matrix.angle }}_look.mp4
+          path: F01_LOOK/OUT/pur_${{ matrix.angle }}_look.mp4
 
   aggregate:
     name: aggregate + F05/F06
@@ -262,10 +295,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: ffmpeg
+      - name: ffmpeg (PATH verifie)
         run: |
+          set -euo pipefail
           sudo apt-get update -y
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ffmpeg
+          command -v ffmpeg && command -v ffprobe
       - uses: actions/download-artifact@v4
         with:
           name: pur-prepare
@@ -273,28 +308,33 @@ jobs:
       - name: Restore prepare tree
         run: |
           set -euo pipefail
-          mkdir -p BRIDGE_PERTURABO/IN BRIDGE_PERTURABO/OUT
-          find RUNNER_TEMP/prepare -name 'production_pack_*.json' -exec cp -f {} BRIDGE_PERTURABO/IN/ \;
-          find RUNNER_TEMP/prepare -name 'pur_manifest.json' -exec cp -f {} BRIDGE_PERTURABO/OUT/ \;
+          mkdir -p BRIDGE/IN BRIDGE/PUR BRIDGE/OUT
+          find RUNNER_TEMP/prepare -name 'production_pack_*.json' \
+            -path '*BRIDGE/IN*' -exec cp -f {} BRIDGE/IN/ \;
+          find RUNNER_TEMP/prepare -name 'production_pack_pur_*.json' \
+            -exec cp -f {} BRIDGE/PUR/ \;
+          find RUNNER_TEMP/prepare -name 'pur_manifest.json' -exec cp -f {} BRIDGE/OUT/ \;
       - uses: actions/download-artifact@v4
         with:
           pattern: pur-result-*
           path: RUNNER_TEMP/results
           merge-multiple: true
-      - name: P-AGG MULTI
+      - name: P-AGG MULTI + P-AUD
         run: |
+          set -euo pipefail
           python3 tools/pur_aggregate.py \
-            --manifest BRIDGE_PERTURABO/OUT/pur_manifest.json \
+            --manifest BRIDGE/OUT/pur_manifest.json \
             --results RUNNER_TEMP/results \
-            --out F04_HEISENBERG/OUT
+            --out OUT
       - name: F05 + F06 batch
         run: |
-          python3 F05_CAMOUFLAGE/CODEBASE/lac_f05_camouflage.py --batch F04_HEISENBERG/OUT --output F05_CAMOUFLAGE/OUT
-          python3 F06_LUTHER/CODEBASE/lac_f06_luther.py --batch F05_CAMOUFLAGE/OUT --output F06_LUTHER/OUT
+          set -euo pipefail
+          python3 F05/CODEBASE/lac_f05_camouflage.py --batch OUT --output F05/OUT
+          python3 F06_LUTHER/CODEBASE/lac_f06_luther.py --batch F05/OUT --output F06_LUTHER/OUT
       - uses: actions/upload-artifact@v4
         with:
           name: pur-bundle
           path: |
             F06_LUTHER/OUT/
-            F05_CAMOUFLAGE/OUT/camouflage_batch_report.json
-            F04_HEISENBERG/OUT/pur_aggregate_report.json
+            F05/OUT/camouflage_batch_report.json
+            OUT/pur_aggregate_report.json

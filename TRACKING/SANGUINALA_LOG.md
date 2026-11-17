@@ -137,3 +137,78 @@ encore `F03_PICTOR` / `F00_PUR` / `F05_CAMOUFLAGE` et un codex unique) :
 
 Prochaine etape : **PR2** — reparer la route Actions (`F00_SOURCE`,
 `F01_LOOK`, `F05`) et mettre ffmpeg dans le PATH du job.
+
+## 2026-11-17 — PR2 : la route Actions est reparee (L9, L10)
+
+Aucun rendu n'a encore ete lance sur GitHub. Ce qui est verifie ici l'est en
+local, avec les memes commandes que la CI.
+
+### 1. Le workflow ne pointait aucun dossier reel (L9)
+
+`dev10_pur_render.yml` a ete reecrit sur l'arbre de la branche :
+
+| Avant | Apres |
+|---|---|
+| `BRIDGE_PERTURABO/` | `BRIDGE/` |
+| `F00_PUR/` | `F00_SOURCE/` |
+| `F03_PICTOR/` | `F01_LOOK/` |
+| `F05_CAMOUFLAGE/` | `F05/` |
+| `F04_HEISENBERG` dans le flux | **retire** (V1 : pas de jump cut) |
+| `style` proposait `split_scene` | `blur` / `reframing` (G0-S) |
+
+### 2. Trois trous de route bouches au passage
+
+1. **Aucun pack par angle.** `f00_pur.py` exige UN pack = UN segment ; un pack
+   MARK1 en porte N. `tools/convert_pur_pack.mjs` prend maintenant
+   `--packs-out <dir>` et ecrit un pack PUR mono-clip par angle, obtenu via
+   `expandSanguinalaPack()`. Le pack MARK1 reste la seule source de verite :
+   on le decoupe, on n'invente aucun champ et on ne touche pas au titre.
+   Noms produits : `production_pack_pur_e99bd523_A01.json` (identiques aux
+   packs PUR historiques).
+2. **La matrice ne pouvait rien passer a F00.** Elle est construite sur les
+   packs mono-clip (`angle`, `pack`, `index`) et **refuse** si le nombre de
+   packs differe du nombre d'entrees du manifeste.
+3. **`sfxDir` pointait `F03_PICTOR/CODEBASE/public/sfx`** (mort) :
+   `F01_LOOK/CODEBASE/public/sfx`.
+
+### 3. ffmpeg/ffprobe hors PATH (L10)
+
+Nouveau module unique `tools/ffmpeg_bin.py` (`FFMPEG`, `FFPROBE`) : override
+`<NOM>_BIN` / `FFMPEG_BIN`, puis PATH, puis binaire `imageio-ffmpeg`, puis
+`FFMPEG_DIR` / `C:\ffmpeg\bin` / `/usr/local/bin` / `/opt/homebrew/bin`.
+Plus un seul nom nu dans la route : `run_all.py`, `tools/pur_aggregate.py`,
+`F05/CODEBASE/lac_f05_camouflage.py`, `F06_LUTHER/CODEBASE/lac_f06_luther.py`.
+Le job CI installe ffmpeg et le prouve (`command -v ffmpeg && ffmpeg -version`).
+
+Defaut secondaire revele : `pur_aggregate.py` annoncait « piste audio
+ABSENTE » quand `ffprobe` echouait, donc un probleme d'outillage devenait un
+defaut du pack. Statuts separes (`PROBE_FAILED` vs `NO_AUDIO`), liste
+`unreadable` dans le rapport, et sortie UTF-8 (famille L1 : le script
+crashait en cp1252 avant d'agreger quoi que ce soit).
+
+### 4. Ce qui a ete verifie, et comment
+
+Fixture MARK1 a 3 clips construite a partir des packs PUR de `REVIEW/packs` :
+
+- `convert_pur_pack.mjs --packs-out` -> 3 packs mono-clip + manifeste 3 entrees,
+  90 s, 1080x1920, style `blur`.
+- Chaque pack mono-clip passe **G0 PACK** en `f00_pur.py --dry-run` (segment
+  lu : A01 02:52:08 -> 02:52:38, etc.).
+- Matrice a 3 entrees coherente (`index`/`angle`/`pack`) ; le glob par angle ne
+  ramene qu'un pack.
+- `pur_aggregate.py` retrouve des `pur_<A01, A02, A03>_look.mp4`, refuse un
+  bundle incomplet (rc=1), refuse un rendu muet (P-AUD), puis publie
+  `pur_<angle>_finale.mp4` + `pur_aggregate_report.json` quand les 3 sont la
+  (rc=0).
+- `F05` puis `F06` en batch sur le bundle : `all_qa_pass` vrai.
+- `run_all.py` resout `FFMPEG` (imageio-ffmpeg 7.1) et `FFPROBE`
+  (`C:\ffmpeg\bin`), les deux repondent `-version`.
+
+Non verifie : un run GitHub reel sur le VOD Twitch. Il appartient a PR4, quand
+le moteur sera branche sur `codex_render`.
+
+Connu et assume : `lac_f05_camouflage.py` echoue sous 3 s de clip (`loudnorm`
+ne peut pas mesurer). Les clips V1 font 30 s.
+
+Prochaine etape : **PR3** — contrat des deux codex (schemas, normaliseurs,
+validation, sortie du `.gitignore`, tests).

@@ -14,12 +14,15 @@ import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
+from ffmpeg_bin import FFMPEG, FFPROBE  # noqa: E402  (AUDIT_V1 L10)
+
 SUSPICIOUS = ("remotion", "manim", "lavf", "lavc", "libav", "python", "claude", "encoder")
 
 
 def probe(path: Path) -> dict:
     result = subprocess.run(
-        ["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", str(path)],
+        [FFPROBE, "-v", "error", "-print_format", "json", "-show_format", "-show_streams", str(path)],
         capture_output=True, text=True,
     )
     if result.returncode:
@@ -40,7 +43,7 @@ def probe(path: Path) -> dict:
 
 def encode_youtube(source: Path, destination: Path) -> None:
     command = [
-        "ffmpeg", "-y", "-i", str(source),
+        FFMPEG, "-y", "-i", str(source),
         "-map", "0:v:0", "-map", "0:a:0?",
         "-c:v", "libx264", "-preset", "medium", "-crf", "18",
         "-pix_fmt", "yuv420p", "-r", "25", "-fps_mode", "cfr",
