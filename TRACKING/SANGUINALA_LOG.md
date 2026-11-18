@@ -318,3 +318,19 @@ Le codex n'est plus un fichier decoratif : il traverse jusqu'au MP4.
   bord (74,0 -> 71,8) malgre le glow.
 - CAPTION reste declaree `applied: false` (pas de sequence PNG Blender) dans
   `postprod_report.json` : c'est le trou connu **L18**, pas un silence.
+
+- **PR6** : la review ecrit les deux vrais codex. `F03_PREVIEW` exporte
+  `codex_render.json` + `codex_postprod.json` (`src/preview/codexExport.js`),
+  le middleware `/api/save-codex` les valide avec `tools/codex.py` **avant**
+  d'ecrire (ordre PP2 inverse -> 400, `title.text` -> 400, rien n'est ecrit), et
+  `codex_write.yml` valide puis commit depuis une URL ou du base64 (Pages est en
+  lecture seule). L'ancien `{style_pack:...}` sous `REVIEW/codex.json` n'existe
+  plus (L19).
+- Preuves PR6 : export par defaut **identique** aux deux codex committes ;
+  `codex_write` run `44213277124` vert (fetch -> `--gate` -> « codex
+  identiques : rien a committer ») et run `44213394100` **rouge comme voulu**
+  (schema envoye a la place du codex : 16 erreurs, aucun commit, HEAD inchange).
+- Tests : 38 pytest (codex 20, postprod 10, glow 8) + 11 `node --test`
+  (`F03_PREVIEW/CODEBASE/tests/codexExport.test.mjs`).
+- Run render `44213397905` (apres PR6) **vert** : prepare -> 3 renders ->
+  aggregate (P-AGG, F03_POSTPROD sur 3 clips, F05/F06).
