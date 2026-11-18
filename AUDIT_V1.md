@@ -451,14 +451,20 @@ appele. **Corrige** : import optionnel + `_NullApp` (les decorateurs restent en
 place), et le coeur ffmpeg utilise `ffmpeg_bin`. Le glow s'applique maintenant
 sur un runner Actions (CPU), sans GPU.
 
-### L18 — Les sous-titres ne sont pas graves en V1 (2026-11-17, declare)
+### L18 — Les sous-titres ne sont pas graves (2026-11-17, corrige PR8)
 
-Le codex postprod porte le style `dev11.caption.style.v1` (police, taille,
-place, contour, motion), mais la gravure reelle demande une sequence PNG
-rendue par **Blender** (`caption/TRAVAIL`, runtime Modal). Aucune sequence n'est
-produite dans la route V1 : la passe CAPTION est donc **declaree non appliquee**
-(`applied: false`, raison explicite) dans `postprod_report.json`. Le style
-voyage, le rendu des sous-titres reste a brancher (V2 ou job Modal dedie).
+Le codex postprod portait le style `dev11.caption.style.v1` (police, taille,
+place, contour, motion) mais la gravure demandait une sequence PNG rendue par
+**Blender** (runtime Modal) : rien n'etait produit, la passe CAPTION etait
+declaree `applied: false` dans chaque rapport.
+
+**Corrige** : `caption/ass_render.py` grave pour de vrai, sans Blender ni GPU —
+mots (whisper CPU ou transcript) -> cues de 1-2 mots -> fichier `.ass` (police
+`Montserrat-ExtraBold.ttf` du depot, taille/place/couleur/contour/motion du
+codex) -> `ass=` (libass) dans **la meme passe** que LUT et FADE. Verifie en
+local : 2991 pixels de glyphes dans la bande 70-85 %, 0 en dehors ; un style
+dont la police manque au depot, une taille hors 12..240 ou une transcription
+impossible sont refuses/declares (`degraded`), jamais silencieux.
 
 ### L19 — La review ecrivait un codex fantome (2026-11-17, corrige PR6)
 
@@ -495,11 +501,10 @@ l'export de la review n'aurait jamais eu la bonne forme.
 | # | Constat | Note |
 |---|---|---|
 | L5 | fixture sans MP4 | utiliser un vrai VOD ou `--look-dir` |
-| L18 | sous-titres non graves | style porte par le codex, rendu Blender/Whisper a brancher |
 
 Corriges : **L9** et **L10** en PR2, **L11** en PR1, **L3** et **L6** en PR1,
 **L8** et **L12** en PR4, **L14** et **L15** en PR4, **L16** et **L17** en PR5,
-**L19** en PR6, **L20** en PR7.
+**L19** en PR6, **L20** en PR7, **L18** en PR8.
 
 
 Reattribues hors de cette branche : **M1** (titres haches) et **M2**

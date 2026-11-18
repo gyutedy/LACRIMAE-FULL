@@ -456,6 +456,12 @@ jobs:
             --manifest BRIDGE/OUT/pur_manifest.json \
             --results RUNNER_TEMP/results \
             --out OUT
+      - name: "Whisper (CPU) pour la passe CAPTION"
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check faster-whisper
+          python3 -c "import faster_whisper,sys; print('faster-whisper', faster_whisper.__version__)"
+
       - name: "F03_POSTPROD (codex_postprod : GLOW -> CAPTION -> LUT -> FADE)"
         run: |
           set -euo pipefail
@@ -465,7 +471,7 @@ jobs:
           n=0
           for f in OUT/*.mp4; do
             base=$(basename "$f")
-            python3 F03_POSTPROD/CODEBASE/postprod.py               --input "$f"               --output "RUNNER_TEMP/postpro/$base"               --codex-postprod REVIEW/codex_postprod.json               --work RUNNER_TEMP/postpro/work               --report "RUNNER_TEMP/postpro/${base%.mp4}_postprod_report.json"
+            python3 F03_POSTPROD/CODEBASE/postprod.py               --input "$f"               --output "RUNNER_TEMP/postpro/$base"               --codex-postprod REVIEW/codex_postprod.json               --work RUNNER_TEMP/postpro/work               --whisper-model base               --report "RUNNER_TEMP/postpro/${base%.mp4}_postprod_report.json"
             mv -f "RUNNER_TEMP/postpro/$base" "$f"
             n=$((n+1))
           done

@@ -28,6 +28,8 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 LUT_APPLY = HERE / "lut" / "lut_apply.py"
 CAPTION_DIR = HERE / "caption"
+sys.path.insert(0, str(CAPTION_DIR))
+import ass_render  # noqa: E402  (gravure ASS : CAPTION reelle)
 REPORT_SCHEMA = "sanguinala.postprod.report.v1"
 PP2_ORDER = ["glow", "caption", "lut", "fade"]
 
@@ -89,7 +91,15 @@ def legacy_style_pack_to_codex(style_pack: dict) -> dict:
     }
 
 
-def apply_one(inp: Path, out: Path, codex: dict, work: Path) -> dict:
+def apply_one(
+    inp: Path,
+    out: Path,
+    codex: dict,
+    work: Path,
+    transcript: Path | None = None,
+    caption_engine: str = "ass",
+    whisper_model: str = "base",
+) -> dict:
     steps: list[dict] = []
     current = inp
     glow = codex.get("glow") or {}
@@ -120,23 +130,41 @@ def apply_one(inp: Path, out: Path, codex: dict, work: Path) -> dict:
         steps.append({"step": "glow", "applied": False, "reason": "disabled dans le codex"})
 
     # ── 2. CAPTION ───────────────────────────────────────────────────────────
-    if caption:
-        schema = CAPTION_DIR / "TRAVAIL" / "CODEBASE" / "caption_schema.py"
-        schema_ok = schema.exists()
-        steps.append({
-            "step": "caption",
-            "applied": False,
-            "reason": (
-                "sequence PNG Blender absente (runtime Modal) : style conserve, "
-                "aucun sous-titre grave dans ce run"
-            ),
-            "style_id": caption.get("id"),
-            "schema_ok": schema_ok,
-        })
-        log(
-            f"G4 CAPTION: style {caption.get('id')} porté par le codex, "
-            "non gravé (séquence Blender absente) — déclaré dans le rapport"
-        )
+    ass_path = None
+    if caption and caption_engine == "ass":
+        try:
+            info = ass_render.render(
+                video=inp,
+                style=caption,
+                work=work / "caption",
+                transcript=transcript,
+                model_name=whisper_model,
+            )
+        except ass_render.CaptionError as exc:
+            steps.append({
+                "step": "caption", "applied": False, "engine": "ass",
+                "style_id": caption.get("id"),
+                "degraded": True,
+                "reason": str(exc),
+            })
+            log(f"G4 CAPTION DEGRADE: {exc} — declare dans le rapport")
+        else:
+            ass_path = Path(info["ass"])
+            steps.append({
+                "step": "caption", "applied": True, "engine": "ass",
+                "style_id": caption.get("id"),
+                "ass": ass_path.name,
+                "source": info["source"],
+                "words": info["words"],
+                "cues": info["cues"],
+                "first_cue": info["first_cue"],
+            })
+            log(
+                f"G4 CAPTION OK: {info['cues']} cues graves ({info['source']}, "
+                f"{info['engine']}) premiere cue {info['first_cue']!r}"
+            )
+    elif caption:
+        steps.append({"step": "caption", "applied": False, "reason": "engine=none"})
     else:
         steps.append({"step": "caption", "applied": False, "reason": "aucun caption dans le codex"})
 
@@ -158,6 +186,8 @@ def apply_one(inp: Path, out: Path, codex: dict, work: Path) -> dict:
     else:
         steps.append({"step": "lut", "applied": False, "reason": "disabled dans le codex"})
 
+    if ass_path is not None:
+        cmd += ["--ass", str(ass_path), "--fontsdir", str(ass_render.FONT_DIR)]
     cmd += [
         "--fade", fade.get("mode", "darken"),
         "--fade-duration", str(fade.get("duration_sec", 1.5)),
@@ -175,7 +205,8 @@ def apply_one(inp: Path, out: Path, codex: dict, work: Path) -> dict:
         "qa_pass": out.is_file(),
         "steps": steps,
         "output": str(out),
-        "lut_fade_single_pass": True,
+        "caption_burned": ass_path is not None,
+        "single_pass_caption_lut_fade": True,
     }
 
 
@@ -188,6 +219,11 @@ def main() -> int:
     ap.add_argument("--style-pack", type=Path, default=None,
                     help="legacy : style_pack du pack, utilisé si aucun codex")
     ap.add_argument("--work", type=Path, default=Path("WORK"))
+    ap.add_argument("--transcript", type=Path, default=None,
+                    help="transcript JSON (sinon whisper sur l'audio du clip)")
+    ap.add_argument("--caption-engine", choices=["ass", "none"], default="ass",
+                    help="ass = gravure reelle (libass) ; none = style seulement")
+    ap.add_argument("--whisper-model", default="base")
     ap.add_argument("--report", type=Path, default=None,
                     help="rapport JSON (défaut : <work>/postprod_report.json)")
     args = ap.parse_args()
@@ -212,7 +248,15 @@ def main() -> int:
     args.work.mkdir(parents=True, exist_ok=True)
     args.output.parent.mkdir(parents=True, exist_ok=True)
 
-    result = apply_one(args.input, args.output, codex, args.work)
+    result = apply_one(
+        args.input,
+        args.output,
+        codex,
+        args.work,
+        transcript=args.transcript,
+        caption_engine=args.caption_engine,
+        whisper_model=args.whisper_model,
+    )
     report = {
         "schema_version": REPORT_SCHEMA,
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -221,7 +265,9 @@ def main() -> int:
         "order": codex.get("order"),
         "qa_pass": bool(result.get("qa_pass")),
         "steps": result.get("steps"),
-        "lut_fade_single_pass": result.get("lut_fade_single_pass", False),
+        "caption_burned": bool(result.get("caption_burned")),
+        "single_pass_caption_lut_fade": bool(result.get("single_pass_caption_lut_fade")),
+        "degraded": [st["step"] for st in (result.get("steps") or []) if st.get("degraded")],
     }
     report_path = args.report or (args.work / "postprod_report.json")
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

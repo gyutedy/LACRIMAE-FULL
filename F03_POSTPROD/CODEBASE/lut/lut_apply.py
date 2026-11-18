@@ -12,7 +12,7 @@ Deux voies, dans cet ordre de priorite :
                            n'etait lu par personne : le LUT ne s'appliquait
                            jamais et rien ne le signalait (AUDIT_V1 L16).
 """
-import argparse, json, subprocess, sys
+import argparse, json, shutil, subprocess, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools"))
@@ -58,6 +58,11 @@ def profile_filters(profile: dict) -> list[str]:
     return filters
 
 
+def _filter_path(path: Path) -> str:
+    """ffmpeg veut un chemin echappe : `:` et antislash cassent le filtre."""
+    return str(path).replace("\\", "/").replace(":", "\\\\:")
+
+
 def resolve_profile(name: str) -> dict:
     data = load_profiles()
     profiles = data.get("profiles") or {}
@@ -76,6 +81,10 @@ def main() -> int:
     ap.add_argument("--profile", default=None, help="profil ATOM-IC (ex. hdr_imperator)")
     ap.add_argument("--fade", default="darken", choices=["darken", "black"])
     ap.add_argument("--fade-duration", type=float, default=1.5) # vers la fin
+    ap.add_argument("--ass", type=Path, default=None,
+                    help="sous-titres .ass a graver (CAPTION -> LUT -> FADE, une passe)")
+    ap.add_argument("--fontsdir", type=Path, default=None,
+                    help="repertoire de polices pour libass")
     args = ap.parse_args()
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -86,6 +95,23 @@ def main() -> int:
                             "-show_entries", "stream=index", "-of", "csv=p=0", str(args.input)],
                            capture_output=True, text=True)
     filters = []
+    cwd = None
+    if args.ass:
+        if not args.ass.is_file():
+            print("G4 FAIL: .ass introuvable:", args.ass); return 2
+        # Un chemin absolu Windows (`D:` + espaces) casse le parseur de filtres.
+        # On grave depuis le dossier du .ass, avec la police copiee a cote :
+        # le filtre ne contient plus que des noms de fichiers.
+        ass_dir = args.ass.resolve().parent
+        chain = f"ass={args.ass.name}"
+        if args.fontsdir and args.fontsdir.is_dir():
+            fonts_local = ass_dir / "_fonts"
+            fonts_local.mkdir(exist_ok=True)
+            for font in sorted(args.fontsdir.glob("*.ttf")) + sorted(args.fontsdir.glob("*.otf")):
+                shutil.copy2(font, fonts_local / font.name)
+            chain += ":fontsdir=_fonts"
+        filters.append(chain)
+        cwd = str(ass_dir)
     if args.cube:
         if not args.cube.exists():
             print("L1 FAIL: cube introuvable:", args.cube); return 2
@@ -106,13 +132,13 @@ def main() -> int:
     else:
         filters.append(f"eq=brightness=-0.15:enable='gte(t,{fade_st:.3f})'")
     vf = ",".join(filters)
-    cmd = [FFMPEG, "-y", "-i", str(args.input), "-vf", vf]
+    cmd = [FFMPEG, "-y", "-i", str(args.input.resolve()), "-vf", vf]
     if (audio.stdout or "").strip():
         cmd += ["-c:a", "copy"]
     else:
         cmd += ["-an"]
-    cmd += [str(args.output)]
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    cmd += [str(args.output.resolve())]
+    r = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd)
     if r.returncode != 0:
         print("F1/L1 FAIL:", (r.stderr or "")[-2000:])
         return 2

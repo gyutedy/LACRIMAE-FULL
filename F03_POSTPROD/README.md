@@ -12,7 +12,7 @@ floutes par le glow de l'image. Cet ordre est porte par le codex
 | Sous-fregate | Source | Porte | Ou tourne | Applique ? |
 |--------------|--------|-------|-----------|------------|
 | glow/ | `modal_glow.py::glow_clip` (ffmpeg pur) | GL1 / GL2 | Actions (CPU) ou Modal (GPU) | **oui** |
-| caption/ | F07_CAPTION entier, 0 modification | G4 | Whisper/Blender = Modal | **non** en V1 : aucune sequence PNG Blender n'est produite, la passe est declaree `applied: false` dans le rapport |
+| caption/ | `ass_render.py` (style du codex -> ASS -> libass) ; Whisper CPU | G4 | Actions (CPU) | **oui** : sous-titres graves, 1-2 mots par cue, police du depot |
 | lut/lut_apply.py | CDC §7.6 + `--profile` | L1 / F1 | Actions (CPU) | **oui** |
 | lut/profiles/ | `atom_ic_profiles.json` depuis dev6 | L1 | — | oui (traduit en filtres ffmpeg) |
 
@@ -22,15 +22,19 @@ passe non appliquee y est **nommee**, jamais silencieuse.
 
 ## Cequi est reellement applique (mesure)
 
-Sur un clip 1080x1920 (codex par defaut) : le glow `scene` sigma 12 / opacite
-0.35 laisse la bande des sous-titres intacte (bas 22 %), le profil
+Sur un clip 1080x1920 (codex par defaut) : les sous-titres apparaissent dans la
+bande 70-85 % (2991 pixels de glyphes, 0 hors zone), le glow `scene` sigma 12 /
+opacite 0.35 laisse cette bande intacte, le profil
 `hdr_imperator` change 98 % des pixels et monte le contraste (ecart-type
 19,8 -> 21,6), le fade assombrit la fin (luminance 47,7 -> 1,0), et le logo du
 moteur garde 97 % de son energie de bord (74,0 -> 71,8) : il reste lisible.
 
-LUT et FADE partent dans **une seule** passe ffmpeg (filtres ordonnes lut puis
-fade) : une seule re-encode par clip, `lut_fade_single_pass: true` dans le
-rapport.
+CAPTION, LUT et FADE partent dans **une seule** passe ffmpeg (filtres ordonnes
+caption -> lut -> fade) : une seule re-encode par clip,
+`single_pass_caption_lut_fade: true` dans le rapport.
+
+Si la transcription est impossible (ni `--transcript`, ni `faster-whisper`), la
+passe est **declaree degradee** (`applied: false`, `degraded: ["caption"]`) avec sa raison, jamais silencieuse.
 
 ## Ce que la fregate ne fait PAS
 
