@@ -10,6 +10,14 @@ import {
   normalizePurStyleParams,
   PUR_STYLE_VALUES,
 } from './preview/bridgeClipper';
+import {
+  buildCodexRender,
+  buildCodexPostprod,
+  stringifyCodex,
+  LUT_PROFILES,
+  DEFAULT_POSTPROD,
+  PP2_ORDER,
+} from './preview/codexExport';
 
 const CANVAS = {
   '9:16': { width: 1080, height: 1920 },
@@ -81,6 +89,13 @@ export default function App() {
     watermark: { enabled: false, images: [] },
     look: defaultLook('blur'),
   });
+  const [postprod, setPostprod] = useState({
+    glow: { ...DEFAULT_POSTPROD.glow },
+    lut: { ...DEFAULT_POSTPROD.lut },
+    fadeOut: { ...DEFAULT_POSTPROD.fade_out },
+    caption: { ...DEFAULT_POSTPROD.caption, position: { ...DEFAULT_POSTPROD.caption.position } },
+  });
+  const [validated, setValidated] = useState(true);
 
   const size = CANVAS[canvas] || CANVAS['9:16'];
   const overlay = normalizePurOverlayParams(manifest?.narrative?.overlay?.style_params);
@@ -279,35 +294,71 @@ export default function App() {
     });
   };
 
-  const exportReview = async () => {
-    setSaveMsg('');
-    const payload = {
-      style_pack: {
-        titles: review.titles,
-        watermark: review.watermark,
-        look: { style, style_params: styleParams },
-      },
-    };
-    const text = JSON.stringify(payload, null, 2);
+  const download = (name, text) => {
     const blob = new Blob([text], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'codex.json';
+    a.download = name;
     a.click();
+  };
+
+  const patchPostprod = (group, partial) => {
+    setPostprod((s) => ({ ...s, [group]: { ...s[group], ...partial } }));
+  };
+
+  const patchCaption = (partial) => {
+    setPostprod((s) => ({ ...s, caption: { ...s.caption, ...partial } }));
+  };
+
+  /** Un codex = un style applique a N clips. Le texte des titres ne sort jamais d'ici. */
+  const exportCodex = async () => {
+    setSaveMsg('');
+    const packToken = packs[0]?.pack_token || packs[0]?.token || null;
+    const wm = (review.watermark && review.watermark.images && review.watermark.images[0]) || {};
+    const codexRender = buildCodexRender({
+      canvas,
+      fps: 30,
+      style,
+      styleParams,
+      overlay,
+      logo: {
+        enabled: Boolean(review.watermark && review.watermark.enabled && wm.src),
+        width_pct: wm.width_pct ?? 15,
+        position: wm.position || 'centered',
+        x_pct: wm.x_pct ?? 50,
+        y_pct: wm.y_pct ?? 50,
+        opacity: wm.opacity ?? 0.8,
+      },
+      packToken,
+      validated,
+    });
+    const codexPostprod = buildCodexPostprod({
+      caption: postprod.caption,
+      glow: postprod.glow,
+      lut: postprod.lut,
+      fadeOut: postprod.fadeOut,
+      canvas,
+      packToken,
+      validated,
+    });
+    const renderText = stringifyCodex(codexRender);
+    const postprodText = stringifyCodex(codexPostprod);
+    download('codex_render.json', renderText);
+    download('codex_postprod.json', postprodText);
     try {
-      const res = await fetch('/api/save-review', {
+      const res = await fetch('/api/save-codex', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: text,
+        body: JSON.stringify({ render: renderText, postprod: postprodText }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok || !body.ok) setError('W1: save review echoue — JSON non ecrit');
+      if (!res.ok || !body.ok) setError(`Export: refus - ${body.error || res.status}`);
       else {
         setError(null);
-        setSaveMsg(`W1 : ${body.path}`);
+        setSaveMsg(`codex ecrits : ${(body.paths || []).join(' + ')}`);
       }
     } catch {
-      setError('W1: save review indisponible — JSON telecharge seulement');
+      setError('Export: serveur dev absent - les 2 JSON sont telecharges');
     }
   };
 
@@ -543,10 +594,58 @@ export default function App() {
               <button type="button" style={btn} onClick={() => removeWm(i)}>retirer</button>
             </div>
           ))}
-          <button type="button" style={{ ...btn, marginTop: 8 }} onClick={exportReview}>
-            Export JSON review unique
-          </button>
         </fieldset>
+
+        <fieldset>
+          <legend>PP codex postprod (ordre grave : {PP2_ORDER.join(' -> ')})</legend>
+          <p style={{ fontSize: 12, opacity: 0.7 }}>
+            Le glow passe avant les sous-titres : jamais l'inverse.
+          </p>
+          <label style={field}>glow</label>
+          <select style={input} value={postprod.glow.mode} onChange={(e) => patchPostprod('glow', { mode: e.target.value, enabled: true })}>
+            <option value="scene">scene (image entiere, hors bande sous-titres)</option>
+            <option value="subject">subject</option>
+          </select>
+          <label style={field}>sigma {postprod.glow.sigma}</label>
+          <input style={slider} type="range" min="4" max="30" value={postprod.glow.sigma} onChange={(e) => patchPostprod('glow', { sigma: Number(e.target.value), enabled: true })} />
+          <label style={field}>opacite {postprod.glow.opacity}</label>
+          <input style={slider} type="range" min="0" max="0.6" step="0.05" value={postprod.glow.opacity} onChange={(e) => patchPostprod('glow', { opacity: Number(e.target.value), enabled: true })} />
+
+          <label style={field}>lut</label>
+          <select style={input} value={postprod.lut.profile} onChange={(e) => patchPostprod('lut', { profile: e.target.value, enabled: true })}>
+            {LUT_PROFILES.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+
+          <label style={field}>fade (fin de clip)</label>
+          <select style={input} value={postprod.fadeOut.mode} onChange={(e) => patchPostprod('fadeOut', { mode: e.target.value })}>
+            <option value="darken">darken</option>
+            <option value="black">black</option>
+          </select>
+          <label style={field}>duree {postprod.fadeOut.duration_sec}s</label>
+          <input style={slider} type="range" min="0.2" max="4" step="0.1" value={postprod.fadeOut.duration_sec} onChange={(e) => patchPostprod('fadeOut', { duration_sec: Number(e.target.value) })} />
+
+          <label style={field}>sous-titres : taille {postprod.caption.size}px</label>
+          <input style={slider} type="range" min="24" max="160" value={postprod.caption.size} onChange={(e) => patchCaption({ size: Number(e.target.value) })} />
+          <label style={field}>y_pct {postprod.caption.position.y_pct}</label>
+          <input style={slider} type="range" min="50" max="95" value={postprod.caption.position.y_pct} onChange={(e) => patchCaption({ position: { ...postprod.caption.position, y_pct: Number(e.target.value) } })} />
+          <label style={field}>police</label>
+          <select style={input} value={postprod.caption.font} onChange={(e) => patchCaption({ font: e.target.value })}>
+            <option value="Montserrat-ExtraBold.ttf">Montserrat-ExtraBold</option>
+            <option value="Montserrat-Bold.ttf">Montserrat-Bold</option>
+            <option value="Arial-Black.ttf">Arial Black</option>
+          </select>
+        </fieldset>
+
+        <label style={{ ...field, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input type="checkbox" checked={validated} onChange={(e) => setValidated(e.target.checked)} />
+          Je valide (validated_by_magos) - sans ca, PP1 refuse
+        </label>
+        <button type="button" style={{ ...btn, marginTop: 8, borderColor: '#00ff88', color: '#00ff88' }} onClick={exportCodex}>
+          Export codex_render.json + codex_postprod.json
+        </button>
+        <p style={{ fontSize: 11, opacity: 0.6 }}>
+          Le codex porte le STYLE. Les textes des titres viennent du pack, jamais d'ici.
+        </p>
       </aside>
     </div>
   );

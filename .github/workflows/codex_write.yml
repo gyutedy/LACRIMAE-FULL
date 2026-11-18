@@ -1,0 +1,122 @@
+name: codex write (review -> REVIEW/)
+
+# La review en ligne ne peut pas ecrire dans le depot (GitHub Pages est en
+# lecture seule). Ce workflow est la seule porte d'ecriture : il prend un codex
+# (URL brute ou base64 produit par l'export de la review), le VALIDE avec le
+# meme validateur que la CI (`tools/codex.py`), puis le commit.
+#
+# Un codex refuse n'est jamais committe : pas de fichier a moitie bon.
+
+on:
+  workflow_dispatch:
+    inputs:
+      codex_render_url:
+        description: "URL brute du codex_render.json (vide = inchange)"
+        required: false
+        default: ""
+      codex_postprod_url:
+        description: "URL brute du codex_postprod.json (vide = inchange)"
+        required: false
+        default: ""
+      codex_render_b64:
+        description: "codex_render.json en base64 (prioritaire sur l'URL)"
+        required: false
+        default: ""
+      codex_postprod_b64:
+        description: "codex_postprod.json en base64 (prioritaire sur l'URL)"
+        required: false
+        default: ""
+      require_validated:
+        description: "Exiger validated_by_magos: true (PP1/W1-R)"
+        required: true
+        type: choice
+        options: ["true", "false"]
+        default: "true"
+      message:
+        description: "Message de commit"
+        required: true
+        default: "chore(codex): codex ecrits depuis la review"
+      branch:
+        description: "Branche cible"
+        required: true
+        default: sanguinala-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: codex-write-${{ inputs.branch }}
+  cancel-in-progress: false
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: "Ecrit les codex (base64 ou URL)"
+        env:
+          RENDER_URL: ${{ inputs.codex_render_url }}
+          POSTPROD_URL: ${{ inputs.codex_postprod_url }}
+          RENDER_B64: ${{ inputs.codex_render_b64 }}
+          POSTPROD_B64: ${{ inputs.codex_postprod_b64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p REVIEW
+          write_codex() {
+            local name="$1" url="$2" b64="$3"
+            if [ -n "$b64" ]; then
+              printf '%s' "$b64" | base64 -d > "REVIEW/$name"
+              echo "REVIEW/$name <- base64 ($(wc -c < "REVIEW/$name") o)"
+            elif [ -n "$url" ]; then
+              curl -fsSL --retry 3 --max-time 60 "$url" -o "REVIEW/$name"
+              echo "REVIEW/$name <- $url ($(wc -c < "REVIEW/$name") o)"
+            else
+              echo "REVIEW/$name inchange"
+            fi
+          }
+          write_codex codex_render.json "$RENDER_URL" "$RENDER_B64"
+          write_codex codex_postprod.json "$POSTPROD_URL" "$POSTPROD_B64"
+
+      - name: "Valide (schemas + porte)"
+        env:
+          REQUIRE: ${{ inputs.require_validated }}
+        run: |
+          set -euo pipefail
+          GATE=""
+          if [ "$REQUIRE" = "true" ]; then GATE="--gate"; fi
+          python3 tools/codex.py check REVIEW/codex_render.json --kind render $GATE
+          python3 tools/codex.py check REVIEW/codex_postprod.json --kind postprod $GATE
+          python3 - <<'PY'
+          import json
+          for name in ("codex_render", "codex_postprod"):
+              d = json.load(open(f"REVIEW/{name}.json", encoding="utf-8"))
+              print(f"{name}: {d['schema_version']} | signe={d['validated_by_magos']}")
+              if "order" in d:
+                  print("  ordre:", " -> ".join(d["order"]))
+                  assert d["order"] == ["glow", "caption", "lut", "fade"], "PP2 viole"
+          PY
+
+      - name: "Commit + push (seulement si le contenu change)"
+        env:
+          MSG: ${{ inputs.message }}
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- REVIEW/codex_render.json REVIEW/codex_postprod.json; then
+            echo "codex identiques : rien a committer"
+            exit 0
+          fi
+          git config user.name "codex-write"
+          git config user.email "codex-write@users.noreply.github.com"
+          git add REVIEW/codex_render.json REVIEW/codex_postprod.json
+          git commit -m "$MSG"
+          git push origin "HEAD:$BRANCH"
+          echo "codex committes sur $BRANCH : $(git rev-parse --short HEAD)"

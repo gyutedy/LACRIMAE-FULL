@@ -460,6 +460,22 @@ produite dans la route V1 : la passe CAPTION est donc **declaree non appliquee**
 (`applied: false`, raison explicite) dans `postprod_report.json`. Le style
 voyage, le rendu des sous-titres reste a brancher (V2 ou job Modal dedie).
 
+### L19 — La review ecrivait un codex fantome (2026-11-17, corrige PR6)
+
+Le bouton Export de `F03_PREVIEW` construisait
+`{style_pack: {titles, watermark, look}}` et l'ecrivait sous
+`REVIEW/codex.json` via `/api/save-review`. Ce fichier n'est lu par aucune
+fregate depuis PR4, et sa forme n'est pas un codex : la review produisait donc
+un objet que rien ne consomme, avec un nom que le validateur refuse.
+
+**Corrige** : l'Export produit `codex_render.json` **et** `codex_postprod.json`
+au format exact des schemas, `/api/save-codex` les valide avec
+`tools/codex.py` avant de les ecrire (un codex refuse n'ecrit rien), et
+`codex_write.yml` est la porte d'ecriture en ligne (Pages est en lecture
+seule). Preuve : l'export par defaut reproduit **a l'identique** les deux codex
+committes (`diff` = vide), et un ordre PP2 inverse ou un champ `title.text` sont
+refuses en 400.
+
 ### Restent ouverts
 | # | Constat | Note |
 |---|---|---|
@@ -467,7 +483,8 @@ voyage, le rendu des sous-titres reste a brancher (V2 ou job Modal dedie).
 | L18 | sous-titres non graves | style porte par le codex, rendu Blender/Whisper a brancher |
 
 Corriges : **L9** et **L10** en PR2, **L11** en PR1, **L3** et **L6** en PR1,
-**L8** et **L12** en PR4, **L14** et **L15** en PR4, **L16** et **L17** en PR5.
+**L8** et **L12** en PR4, **L14** et **L15** en PR4, **L16** et **L17** en PR5,
+**L19** en PR6.
 
 
 Reattribues hors de cette branche : **M1** (titres haches) et **M2**

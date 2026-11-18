@@ -92,7 +92,7 @@ Sortie : `codex_postprod.json`, `validated_by_magos: true`.
 
 Sur Pages, le bouton d'enregistrement **telecharge** le JSON (il n'y a pas de
 disque a ecrire). Le fichier telecharge est ensuite commite dans `REVIEW/`
-par l'action `codex_write.yml` (PR6). Aucune manipulation git pour l'operateur.
+par l'action `codex_write.yml`. Aucune manipulation git pour l'operateur.
 
 La sauvegarde disque directe (`/api/save-review`, `/api/save-style`) n'existe
 que dans le serveur Vite local : c'est un confort de debogage, pas la voie

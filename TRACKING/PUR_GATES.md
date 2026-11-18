@@ -22,6 +22,7 @@ pack PUR + codex_render.json
 | **G0-S STYLE** | Conversion | `blur` OU `reframing`. Autre / infere / `split_scene` = REFUS exit 2 |
 | **W1-R CODEX RENDER** | Avant tout rendu | `REVIEW/codex_render.json` present, schema `sanguinala.render.codex.v1` valide, `validated_by_magos: true`. Absent ou `false` = rendu refuse. Verifie par `python tools/codex.py check REVIEW/codex_render.json --gate` |
 | **PP1 CODEX POSTPROD** | Avant post-prod | `REVIEW/codex_postprod.json` present, schema `sanguinala.postprod.codex.v1` valide, `validated_by_magos: true`. Verifie par `python tools/codex.py check REVIEW/codex_postprod.json --gate` |
+| **W-CODEC** | ecriture du codex (`/api/save-codex`, `codex_write.yml`) | `tools/codex.py check --kind ... --gate` **avant** d'ecrire/committer. Un codex qui viole le schema, l'ordre PP2 ou la porte de signature n'est jamais ecrit : la review ne peut pas fabriquer un codex fantome |
 | **PP2 ORDRE** | Post-prod | ordre applique = `glow → caption → lut → fade`. Les sous-titres ne sont jamais floutes par le glow |
 | **G1 SOURCE** | Download | yt-dlp OK, segment seulement |
 | **G2 DUREE** | Download | end − start ± 0,5 s |

@@ -47,7 +47,7 @@ branchement du moteur sur le codex, la survie du watermark, et la route CI.
 | PR3 | contrat des 2 codex (schemas, normaliseurs, tests, `.gitignore`) | **fait** |
 | PR4 | le moteur applique `codex_render` (Remotion branche, logo, watermark propage) | **fait** — run CI `44191005402` vert |
 | PR5 | post-prod applique `codex_postprod` + inversion `GLOW -> CAPTION` | **fait** |
-| PR6 | review en ligne ecrit les 2 codex (`codex_write.yml`) | a faire |
+| PR6 | review en ligne ecrit les 2 codex (`codex_write.yml`) | **fait** |
 
 Prochain pas concret : **PR5** — post-prod applique `codex_postprod.json` + inversion `GLOW -> CAPTION`. Le
 contrat existe et il est executable (`tools/codex.py`), mais rien ne le lit

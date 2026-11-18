@@ -263,10 +263,12 @@ def main(argv: list[str] | None = None) -> int:
     chk.add_argument("path", help="chemin du codex JSON")
     chk.add_argument("--gate", action="store_true",
                      help="applique aussi la porte W1-R / PP1 (validated_by_magos)")
+    chk.add_argument("--kind", choices=[RENDER, POSTPROD], default=None,
+                     help="force le type (sinon deduit du nom du fichier)")
     args = ap.parse_args(argv)
 
     path = Path(args.path)
-    kind = POSTPROD if "postprod" in path.name else RENDER
+    kind = args.kind or (POSTPROD if "postprod" in path.name else RENDER)
     try:
         raw = _read_json(path)
     except CodexError as exc:

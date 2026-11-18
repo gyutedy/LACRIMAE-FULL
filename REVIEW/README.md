@@ -64,7 +64,7 @@ Copie ciblee (CDC §7.4), jamais de collage du src complet :
 | Titres editables (style, pas le texte) | `review_dev8` panneau texte | `F03_PREVIEW/CODEBASE/src/App.jsx` |
 | Curseur logo (glisser `x_pct`/`y_pct`) | `review_dev8` `LogoOverlay` | idem |
 | Taille video claire (`fg_scale`) | LOOK `_purPackComposition` + slider | idem |
-| Export du codex render | bouton `codex_render.json` | idem |
+| Export du codex render | bouton `Export codex...` -> `codex_render.json` | idem |
 | Style des sous-titres (`s1`) | `dev11-F07` `styleSchema.js` | `F03_POSTPROD/CODEBASE/caption/PREVIEW` |
 
 Le src complet du salvage (hybrid / reveal / ranking) reste dans
@@ -100,15 +100,22 @@ Refus automatiques :
 - `order` post-prod autre que `glow → caption → lut → fade` (PP2) ;
 - `validated_by_magos` different de `true` quand la porte est demandee.
 
-## Etat transitoire (PR3 → PR6)
+## Ecriture des codex depuis la review (PR6)
 
-- Le bouton **Export** de `F03_PREVIEW` produit encore l'**ancien** format
-  (`{style_pack: {titles, watermark, look}}`) sous le nom `codex.json` :
-  `tools/codex.py check` le refuse, et c'est voulu — ce n'est pas un codex.
-  La review ecrira les deux vrais codex en **PR6** (`codex_write.yml`).
-- ~~L'ancien `REVIEW/codex.json` unique~~ : `run_all.py` ne le lit plus
-  (PR4). W1 porte sur `codex_render.json` ; `--review` reste accepte mais
-  ignore, il disparait en PR5/PR6.
+Le bouton **Export** de `F03_PREVIEW` ecrit **les deux vrais codex**, plus
+l'ancien format :
+
+| Action | Effet |
+|---|---|
+| `Export codex_render.json + codex_postprod.json` | telecharge les 2 fichiers **et**, en dev (`npm run dev`), les ecrit dans `REVIEW/` |
+| middleware `/api/save-codex` | valide chaque codex avec `tools/codex.py check --kind ...` (les schemas de la CI) **avant** d'ecrire : un codex refuse (ordre PP2 inverse, champ inconnu, valeur hors bornes, texte de titre) n'ecrit rien |
+| case `Je valide (validated_by_magos)` | pose la signature ; decochee, le codex part avec `false` et W1-R/PP1 fermeront le rendu |
+| `.github/workflows/codex_write.yml` | seule porte d'ecriture en ligne (Pages est en lecture seule) : `workflow_dispatch` avec `codex_render_url`/`codex_postprod_url` ou les deux en base64, validation puis commit sur `sanguinala-v1` |
+
+Le codex postprod exporte porte les curseurs de la review (glow sigma/opacite/
+mode, profil LUT, fondu) et le style des sous-titres (`dev11.caption.style.v1`) ;
+l'ordre reste fige `glow -> caption -> lut -> fade`.
+
 - **Signature** : les deux codex commites portent `validated_by_magos: true`
   pour que la CI puisse rendre. Tant que `codex_write.yml` (PR6) n'existe pas,
   cette valeur est posee **a la main** : c'est l'operateur qui la pose apres
