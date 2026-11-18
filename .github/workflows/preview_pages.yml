@@ -1,0 +1,72 @@
+name: preview pages (review en ligne)
+
+# La review se fait sur GitHub Pages (lecture seule). Rien ne publiait le build :
+# gh-pages etait reste au 2026-11-11, donc l'operateur cliquait sur une review
+# qui ne connaissait ni les codex ni le moteur. Ce workflow reconstruit les deux
+# previews et les publie.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [sanguinala-v1]
+    paths:
+      - "F03_PREVIEW/CODEBASE/**"
+      - "F03_POSTPROD/CODEBASE/caption/PREVIEW/CODEBASE/**"
+      - ".github/workflows/preview_pages.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: preview-pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: "Tests de la projection review -> codex"
+        working-directory: F03_PREVIEW/CODEBASE
+        run: node --test tests/codexExport.test.mjs
+
+      - name: "Build F03_PREVIEW (review render)"
+        working-directory: F03_PREVIEW/CODEBASE
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run build
+          test -f dist/index.html
+
+      - name: "Build F07 (review postprod)"
+        working-directory: F03_POSTPROD/CODEBASE/caption/PREVIEW/CODEBASE
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run build
+          test -f dist/index.html
+
+      - name: "Assemble (f03 + f07)"
+        run: |
+          set -euo pipefail
+          mkdir -p public_out
+          cp -r F03_PREVIEW/CODEBASE/dist public_out/f03
+          cp -r F03_POSTPROD/CODEBASE/caption/PREVIEW/CODEBASE/dist public_out/f07
+          touch public_out/.nojekyll
+          # les medias (clips, pack.json, target.mp4, transcript) vivent deja sur
+          # gh-pages : keep_files les conserve.
+          echo "f03 : $(find public_out/f03 -type f | wc -l) fichiers / f07 : $(find public_out/f07 -type f | wc -l)"
+
+      - name: "Publie sur gh-pages"
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./public_out
+          keep_files: true
+          commit_message: "preview: ${{ github.sha }}"
