@@ -334,3 +334,11 @@ Le codex n'est plus un fichier decoratif : il traverse jusqu'au MP4.
   (`F03_PREVIEW/CODEBASE/tests/codexExport.test.mjs`).
 - Run render `44213397905` (apres PR6) **vert** : prepare -> 3 renders ->
   aggregate (P-AGG, F03_POSTPROD sur 3 clips, F05/F06).
+
+- **PR7** : `gh-pages` etait fige au 2026-11-11 (`fa0b0b4`) — la review en
+  ligne servie ne connaissait ni les codex ni l'export. Nouveau workflow
+  `preview_pages.yml` (tests de projection, build `f03/` + `f07/`, publication
+  `keep_files: true`). Run `44382283248` **vert** ; `gh-pages` passe a
+  `3162c31`, `f03/index.html` sert `assets/index-BmhfKw7z.js` qui contient
+  `sanguinala.render.codex.v1` / `sanguinala.postprod.codex.v1` /
+  `/api/save-codex` ; `f07/target.mp4` et `pack.json` toujours 200.

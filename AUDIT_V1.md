@@ -476,6 +476,21 @@ seule). Preuve : l'export par defaut reproduit **a l'identique** les deux codex
 committes (`diff` = vide), et un ordre PP2 inverse ou un champ `title.text` sont
 refuses en 400.
 
+### L20 — Rien ne publiait la review en ligne (2026-11-17, corrige PR7)
+
+`gh-pages` etait reste au **2026-11-11** (`fa0b0b4`) : aucun workflow ne
+reconstruisait `f03/` ni `f07/`. Les guides disaient « l'operateur valide sur
+GitHub Pages », mais la page servie etait un build d'avant les codex — donc
+l'export de la review n'aurait jamais eu la bonne forme.
+
+**Corrige** : `preview_pages.yml` reconstruit les deux previews, lance
+`node --test tests/codexExport.test.mjs`, publie sur `gh-pages` avec
+`keep_files: true` (les medias deja en place — clips, `pack.json`,
+`target.mp4`, `archive/` — sont conserves). Verifie : `f03/index.html` de
+`gh-pages` pointe maintenant `assets/index-BmhfKw7z.js`, qui contient
+`sanguinala.render.codex.v1`, `sanguinala.postprod.codex.v1` et
+`/api/save-codex` ; `f07/` et les medias repondent 200.
+
 ### Restent ouverts
 | # | Constat | Note |
 |---|---|---|
@@ -484,7 +499,7 @@ refuses en 400.
 
 Corriges : **L9** et **L10** en PR2, **L11** en PR1, **L3** et **L6** en PR1,
 **L8** et **L12** en PR4, **L14** et **L15** en PR4, **L16** et **L17** en PR5,
-**L19** en PR6.
+**L19** en PR6, **L20** en PR7.
 
 
 Reattribues hors de cette branche : **M1** (titres haches) et **M2**
