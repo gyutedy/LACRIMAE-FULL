@@ -300,3 +300,21 @@ Le codex n'est plus un fichier decoratif : il traverse jusqu'au MP4.
 - Le manifeste du run porte bien : `style: blur / source: codex`,
   `style_params` du codex, `narrative.overlay.style_params` du codex, texte du
   titre **du pack**, et `narrative.logo` avec le PNG du pack.
+
+- **Run GitHub Actions `44203429959` vert** (meme pack MARK1 `e99bd523`, VOD
+  Twitch `2927914500`) avec les **deux** codex : prepare (codex render `--gate`
+  + codex postprod `--gate`, PNG watermark) -> render A01/A02/A03 (moteur) ->
+  aggregate : P-AGG/P-AUD, puis **F03_POSTPROD sur les 3 clips** (glow `scene`
+  sigma 12 opacite 0.35, LUT `hdr_imperator` en filtres ffmpeg, fade darken
+  1,5 s), puis F05/F06 (`all_qa_pass: true`). Artefacts : `pur-result-A01`
+  36,1 Mo, `A02` 28,3 Mo, `A03` 41,9 Mo, `pur-bundle` **67,3 Mo** (contre
+  85,8 Mo sans post-prod : la re-encode du LUT/fade reduit le poids).
+- Le codex postprod voyage bien dans l'artefact `pur-prepare`
+  (`sanguinala.postprod.codex.v1`, ordre `[glow, caption, lut, fade]`,
+  `validated_by_magos: true`), donc un job peut le relire.
+- Mesures locales du rendu post-prod : LUT change 98 % des pixels et monte le
+  contraste (ecart-type 19,8 -> 21,6) ; fade fait tomber la luminance finale a
+  1,0 contre 47,7 au milieu ; le logo du moteur garde 97 % de son energie de
+  bord (74,0 -> 71,8) malgre le glow.
+- CAPTION reste declaree `applied: false` (pas de sequence PNG Blender) dans
+  `postprod_report.json` : c'est le trou connu **L18**, pas un silence.
