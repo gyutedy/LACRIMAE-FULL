@@ -497,6 +497,23 @@ l'export de la review n'aurait jamais eu la bonne forme.
 `sanguinala.render.codex.v1`, `sanguinala.postprod.codex.v1` et
 `/api/save-codex` ; `f07/` et les medias repondent 200.
 
+### L21 — Tous les clips sortaient avec le titre du premier (2026-11-18, corrige PR9)
+
+Le pack MARK1 porte un `narrative.overlay` **global** (celui du premier asset) et
+un `overlay` par clip. `_purPackComposition.jsx` preferait le global :
+
+```js
+lines: (globalOverlay.lines?.length ? globalOverlay.lines : entryOverlay.lines) || []
+```
+
+Les trois clips rendus affichaient donc **« She lost 50,000 dollars »**, alors que
+le pack disait A02 « She lost 86,000 seconds » et A03 « She paid 385 was much ».
+Le pack etait juste : c'etait le moteur qui ecrasait le titre de chaque entree.
+
+**Corrige** : `pickOverlayLines` / `mergeOverlay` (l'entree gagne, le global
+comble), `parsePurPackMulti` ne publie **aucun** titre global quand il y a
+plusieurs clips, et 4 tests verrouillent le comportement.
+
 ### Restent ouverts
 | # | Constat | Note |
 |---|---|---|
@@ -504,7 +521,7 @@ l'export de la review n'aurait jamais eu la bonne forme.
 
 Corriges : **L9** et **L10** en PR2, **L11** en PR1, **L3** et **L6** en PR1,
 **L8** et **L12** en PR4, **L14** et **L15** en PR4, **L16** et **L17** en PR5,
-**L19** en PR6, **L20** en PR7, **L18** en PR8.
+**L19** en PR6, **L20** en PR7, **L18** en PR8, **L21** en PR9.
 
 
 Reattribues hors de cette branche : **M1** (titres haches) et **M2**

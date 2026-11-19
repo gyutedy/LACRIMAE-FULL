@@ -33,7 +33,7 @@ jobs:
 
       - name: "Tests de la projection review -> codex"
         working-directory: F03_PREVIEW/CODEBASE
-        run: node --test tests/codexExport.test.mjs
+        run: node --test tests/codexExport.test.mjs tests/overlayTitle.test.mjs
 
       - name: "Build F03_PREVIEW (review render)"
         working-directory: F03_PREVIEW/CODEBASE

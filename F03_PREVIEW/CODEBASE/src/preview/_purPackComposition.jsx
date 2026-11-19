@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { AbsoluteFill, Img, useCurrentFrame, useVideoConfig, Video } from 'remotion';
 import { antiDetectionTransform } from './antiDetection';
-import { normalizePurOverlayParams, normalizePurStyleParams } from './bridgeClipper';
+import { mergeOverlay, normalizePurOverlayParams, normalizePurStyleParams } from './bridgeClipper';
 
 function purCropTransform(cropPct) {
   if (!cropPct) return '';
@@ -109,12 +109,9 @@ export function PurPackComposition({ purManifest, session: sessionProp, entryInd
   const isMulti = entries.length > 1;
   const globalOverlay = manifest.narrative?.overlay || {};
   const entryOverlay = entry.overlay || {};
-  const overlayRaw = {
-    ...entryOverlay,
-    ...globalOverlay,
-    lines: (globalOverlay.lines?.length ? globalOverlay.lines : entryOverlay.lines) || [],
-    style_params: { ...(entryOverlay.style_params || {}), ...(globalOverlay.style_params || {}) },
-  };
+  // PR9 : le titre du clip vient de SON entree, jamais du global (qui n'est
+  // qu'un repli). Sinon tous les clips sortent avec le titre du premier.
+  const overlayRaw = mergeOverlay(globalOverlay, entryOverlay);
   const overlay = { ...overlayRaw, ...normalizePurOverlayParams(overlayRaw.style_params) };
   const pur = manifest.pur || {};
 

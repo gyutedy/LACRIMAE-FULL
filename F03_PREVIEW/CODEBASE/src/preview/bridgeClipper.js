@@ -303,6 +303,33 @@ export function clipFileCandidates(angleId) {
   return [`clips/pur_${id}.mp4`, `clips/${id}_look.mp4`, `clips/${id}.mp4`];
 }
 
+/**
+ * Quel texte de titre afficher pour une entree.
+ *
+ * Le pack MARK1 porte un `narrative.overlay` global ET un `overlay` par clip.
+ * Quand un manifeste a plusieurs entrees, le global ne peut pas dire la verite
+ * pour toutes : c'est l'entree qui commande, le global n'est qu'un repli.
+ * (Avant PR9 le global gagnait : les 3 clips sortaient avec le titre du premier.)
+ */
+export function pickOverlayLines(globalOverlay = {}, entryOverlay = {}) {
+  const entry = Array.isArray(entryOverlay?.lines) ? entryOverlay.lines.filter(Boolean) : [];
+  if (entry.length) return entry;
+  const global = Array.isArray(globalOverlay?.lines) ? globalOverlay.lines.filter(Boolean) : [];
+  return global;
+}
+
+/**
+ * Fusionne les deux overlays : l'entree gagne champ par champ, le global comble.
+ */
+export function mergeOverlay(globalOverlay = {}, entryOverlay = {}) {
+  return {
+    ...globalOverlay,
+    ...entryOverlay,
+    lines: pickOverlayLines(globalOverlay, entryOverlay),
+    style_params: { ...(globalOverlay?.style_params || {}), ...(entryOverlay?.style_params || {}) },
+  };
+}
+
 export function parsePurPack(pack, options = {}) {
   const fps = options.fps || 30;
   const clipFiles = options.clipFiles || [];
@@ -434,6 +461,9 @@ export function parsePurPackMulti(packs, options = {}) {
     style_source: operatorStyle ? 'operator' : declared ? 'pack' : styleKnown ? 'inferred' : 'none',
     style_unknown: !styleKnown,
     style_params: options.styleParams || base.style_params,
+    // Plusieurs clips : aucun texte global n'est vrai pour tous. Chaque entree
+    // porte le sien (`entry.overlay.lines`), le global reste vide.
+    narrative: { ...(base.narrative || {}), overlay: { ...((base.narrative || {}).overlay || {}), lines: [] } },
     entries,
     duration_seconds: durationSeconds,
     total_frames: Math.max(1, entries.reduce((sum, e) => {
